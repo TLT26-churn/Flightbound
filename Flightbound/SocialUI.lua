@@ -23,6 +23,7 @@ local function available()
 end
 local function refresh()
  local S=F.Social;S:Refresh()
+ S.guildAt=0
  for _,p in pairs(S.peers) do p.helloAt=0 end
  S.status="Checking online friends and guildmates...";U.Render()
 end
@@ -40,7 +41,7 @@ function U.pages.social()
   else button(12,102,160,28,"WAITING...",nil,false) end
   button(180,102,160,28,"CHOOSE TEAM",page("duelteam"));button(348,102,160,28,"CANCEL",run(function() S:Decline() end))
  end
- local rows={};for key,c in pairs(S.contacts) do rows[#rows+1]={key=key,c=c} end
+ local rows={};for key,c in pairs(S.contacts) do if S:Detected(key) then rows[#rows+1]={key=key,c=c} end end
  table.sort(rows,function(a,b) if a.c.online~=b.c.online then return a.c.online end;return a.key<b.key end)
  U.socialOffset=G.Clamp(U.socialOffset or 0,0,math.max(0,#rows-count))
  for i=1,count do local row=rows[U.socialOffset+i]
@@ -48,12 +49,13 @@ function U.pages.social()
    local peer,c=row.key,row.c;local p=S.peers[peer];local y=start+(i-1)*49
    text(12,y,344,16,name(peer),12)
    local tag=c.friend and c.guild and "FRIEND + GUILD" or c.friend and "FRIEND" or "GUILD"
-   local status=not c.online and "OFFLINE" or S:Compatible(peer) and "READY" or p and p.version and p.version~=F.version and "UPDATE "..short(p.version,10) or "CHECKING ADDON"
+   local status=S:Compatible(peer) and "READY" or p and p.version and p.version~=F.version and "VERSION "..short(p.version,10).." / UPDATE NEEDED" or "INCOMPATIBLE RULES"
    text(12,y+20,344,12,tag.." / "..status,9)
    button(380,y+1,128,31,"DUEL",run(function() S:Invite(peer,U.DuelTeamCode()) end),not pending and S.saved.enabled and S:Compatible(peer) and S.env.ready(U.DuelTeamCode()))
   end
  end
- if #rows==0 then text(12,166,496,55,"No friends or guildmates are loaded yet. Both players need Flightbound to link.",12) end
+ if not pending then text(12,59,496,12,"ONLINE FLIGHTBOUND PLAYERS ONLY",9) end
+ if #rows==0 then text(12,166,496,70,"Looking for Flightbound players... Only online friends and guildmates who respond with the addon appear here.",12) end
  button(12,376,86,25,"< PREV",run(function() U.socialOffset=math.max(0,U.socialOffset-count) end),U.socialOffset>0)
  button(104,376,86,25,"NEXT >",run(function() U.socialOffset=U.socialOffset+count end),U.socialOffset+count<#rows)
  button(330,376,178,25,S.saved.enabled and "SYNC: ON" or "SYNC: OFF",run(function() S:SetEnabled(not S.saved.enabled) end))

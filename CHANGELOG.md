@@ -1,5 +1,16 @@
 # Release notes
 
+## 4.8.2
+
+- Stop blindly whispering every guild roster member; use a hidden guild-channel hello for discovery. Scores and duels stay private.
+- Pause unreachable friend targets for five minutes, remove queued retries, and filter recent failed Flightbound whispers from chat. Preserve ordinary whisper errors and unrelated system messages.
+- Show only online friends/guildmates detected running Flightbound in the duel list. Keep cached offline leaderboard scores.
+- Add an invitation popup with Accept Duel, Choose Team, Decline, a countdown and a sound that respects the existing toggle. It works with the main window closed and never takes keyboard focus.
+- Guard against duplicate/expired acceptance and recheck readiness before starting.
+- Preserve campaign saves. Both players need 4.8.2 for duels. The same ZIP works on Windows and Linux (Wine/Proton).
+
+Validated with simulated guild/friend messaging, localized error filtering, two-client duels, campaign regression checks and 263 rendered screens. Live two-player verification remains outstanding.
+
 ## 4.8.1
 
 - Fix Forever's first-name/surname API handling, which prevented the link club from initializing.

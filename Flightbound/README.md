@@ -1,4 +1,4 @@
-# Flightbound 4.8.1 — Friendly duels and campaign leaderboards
+# Flightbound 4.8.2 — Friendly duels and campaign leaderboards
 
 A small, movable Game Boy-style creature RPG inside WoW Forever. The trainer
 now walks an actual dungeon map. The room-card selection flow is replaced by
@@ -11,7 +11,7 @@ The result must contain `Interface/AddOns/Flightbound/Flightbound.toc`, without
 an extra nested folder. For a first install, restart WoW and enable Flightbound
 in the character screen's AddOns list. To update, replace the existing addon
 folder, then use `/reload` when convenient. Open with `/fb`.
-The footer should read **V4.8.1**. Compatible with WoW Forever (interface 16001),
+The footer should read **V4.8.2**. Compatible with WoW Forever (interface 16001),
 Windows and Linux through Wine/Proton. No external program is needed.
 `/flightbound` and `/fbound` still work; `/fb` also accepts their subcommands.
 
@@ -26,9 +26,17 @@ still apply. Setup retries when character data is delayed. No save reset.
 Use `/fb linktest` for a self-whisper delivery check, and `/fb linkstatus` for
 setup and send diagnostics. The test messages only your own character.
 
+**4.8.2 social update:** the duel list now shows only online friends/guildmates
+who have responded with Flightbound. Guild discovery uses a hidden addon-channel
+hello instead of whispering every roster entry. Unreachable friend targets pause
+for five minutes; recent failed background probes are filtered from chat while
+ordinary whisper errors remain visible. Incoming invites show a mouse-only
+popup even when the game window is closed, with Accept Duel, Choose Team,
+Decline and a countdown. One alert respects the Sound setting. No save reset.
+
 ## Friendly duels
 
-Both players need **Flightbound 4.8.1**, must be online in WoW Forever,
+Both players need **Flightbound 4.8.2**, must be online in WoW Forever,
 and must appear in each other's friends list or share a guild. Battle.net
 friends count when their Forever character is available; previously
 seen characters remain recognizable while that Battle.net friendship exists.
@@ -38,8 +46,10 @@ seen characters remain recognizable while that Battle.net friendship exists.
 2. Choose a team of **one to three owned companion species**. Both teams must
    have the same size. All duel companions use their final form at **level 14**,
    with full HP, regardless of their campaign level or health.
-3. Select **Duel** beside a ready contact. Your friend opens `/fb friends`,
-   selects a matching team size and accepts. Invitations expire after a minute.
+3. Select **Duel** beside a ready contact. Your friend clicks **Accept Duel**
+   in the invitation popup. **Choose Team** opens the team picker if needed;
+   save a matching team size, then accept. `/fb friends` also has Accept Duel.
+   Invitations expire after a minute. Both players must update to 4.8.2.
 4. Take alternating turns using Strike, named Special, Defense, Swap and Focus.
    With keys enabled: **1** Strike, **2** Special, **3** Defense, **4** Swap,
    **5** Duel Menu, **6** Focus. Choose a replacement companion with the mouse.
@@ -54,8 +64,10 @@ session seeds. A 200-turn limit prevents endless matches.
 The addon retries lost messages and validates each move on both sides.
 A short `/reload` can recover through the saved turn journal. Closing the
 window leaves the match running; **Duel Menu → Forfeit** leaves immediately.
-Two minutes without a move ends the duel. Invitations appear in local chat
-without automatically opening a window. No strangers are discovered or admitted.
+Two minutes without a move ends the duel. The invitation popup never captures
+keyboard focus. Only online contacts detected running Flightbound appear in the
+duel list; different addon versions are labelled and cannot duel. No strangers
+are discovered or admitted. Cached leaderboard scores remain available offline.
 
 ## Friends and guild campaign leaderboard
 
@@ -370,11 +382,16 @@ All 241 rendered screens pass text-overflow and layer-order checks.
 The 4.8 checks add deterministic duels, two-client packet loss/duplication,
 reload recovery, long journal replay, final-result acknowledgment, forfeit,
 timeouts, contact removal, offline cache and native API adapter checks.
-All 260 current UI screens pass overflow and layer-order checks, including
+All 263 current UI screens pass overflow and layer-order checks, including
 duel animations, keyboard continuation and campaign-save isolation.
 The 4.8.1 adapter tests reproduce Forever's first/surname returns and a true
 outgoing-chat flag, verify full-name whisper recipients and contact admission,
 and exercise delayed login, actual chat lockdown, rejected sends and self echoes.
+The 4.8.2 checks add a 100-member guild discovery simulation, failed-target
+cooldowns, localized error filtering with manual-whisper errors preserved,
+confirmed-addon filtering and closed-window invitation handling. Popup checks
+cover sound/mute, team selection, duplicate acceptance, busy/cancelled/expired
+invites and keyboard-focus preservation.
 The complete campaign still clears in 24/24 tactical simulation runs.
 These checks do not replace live-client testing.
 

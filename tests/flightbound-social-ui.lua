@@ -18,20 +18,22 @@ local function record(badges,lane) return {lane=lane or "adventure",ending=badge
 local env={me=function() return "you" end,now=function() return clock end,wall=function() return 1800000000+math.floor(clock) end,
  contacts=function() return contacts end,score=function() return record(3) end,ready=F.SocialClient.Ready,
  send=function(peer,msg) wire[#wire+1]={to=peer,from="you",msg=msg};return true end,
- changed=function(event) if event then U.QueueDuelAnimation(event) end;if U.frame:IsShown() then U.Render() end end}
+ changed=function(event) if event then U.QueueDuelAnimation(event) end;U.UpdateDuelInvite();if U.frame:IsShown() then U.Render() end end}
 local S=F.NewSocial(env,{});F.Social=S;S:Refresh();S.status="Online friends and guildmates are ready. Choose a team to challenge someone."
 for _,id in ipairs({"friend","guild","both","offline","old"}) do
  S.peers[id]={version=id=="old" and "4.0.0" or F.version,duelRules=D.rules,seen=0,helloAt=999}
  S:Store(id,record(id=="friend" and 8 or id=="guild" and 6 or 4))
 end
 snapshot("social-club");U.socialOffset=2;snapshot("social-club-page2");U.socialOffset=0
+for _,label in ipairs(U.pools.text) do if label.shown then assert(not label.text:find("No Addon Yet") and not label.text:find("Mira Sunfall"),"Unconfirmed or offline contact leaked into duel list") end end
+assert(loadfile("tests/flightbound-invites.lua"))(F,G,U,S,snapshot,key,function(n) clock=n end)
 U.page="leaderboard";snapshot("social-board-all")
 U.boardScope="guild";snapshot("social-board-guild");U.boardScope="friend";snapshot("social-board-friends")
 U.boardScope="all";U.boardLane="veteran";snapshot("social-board-empty");U.boardLane=nil
 U.page="duelteam";U.duelDraft=nil;U.duelTeamOffset=0;snapshot("social-team")
 U.duelTeamOffset=6;snapshot("social-team-page2");U.duelTeamOffset=0
 U.page="social";S:Receive("friend","1|I|1800000000.1.99|4,7,12|99");snapshot("social-invite")
-S.incoming=nil;S.status="Choose your opponent.";S.saved.team="1,2,3";wire={}
+S.incoming=nil;U.UpdateDuelInvite();S.status="Choose your opponent.";S.saved.team="1,2,3";wire={}
 -- A real second controller drives the rendered duel. The transport is a test queue.
 local peer=F.NewSocial({me=function() return "friend" end,now=env.now,wall=env.wall,contacts=function() return {you={name="you",online=true,friend=true}} end,
  score=function() return record(8) end,ready=function() return true end,

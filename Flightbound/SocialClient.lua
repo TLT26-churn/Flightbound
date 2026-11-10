@@ -1,7 +1,7 @@
 -- Native WoW adapter. Only current friends and guildmates are admitted.
 local _,F=...
 local G,D=F.Game,F.Duel
-local C={startStatus="Waiting for your character to finish loading."};F.SocialClient=C
+local C={startStatus="Waiting for your character to finish loading.",recentWhispers={},manualWhispers={}};F.SocialClient=C
 local function regional() return RegionalUniqueNamesEnabled and RegionalUniqueNamesEnabled() end
 local function plain(v) return type(v)=="string" and (not issecretvalue or not issecretvalue(v)) end
 local function realm(value) return (value or ""):gsub("[%s%-]",""):lower() end
@@ -61,7 +61,7 @@ function C.Contacts()
   if saved then saved.bnCharacters=cache end
   local function account(g,chars)
    local server=g and (g.realmName or g.realmDisplayName)
-   if g and (regional() or type(server)=="string" and server~="") and g.clientProgram=="WoW" and (not g.wowProjectID or not WOW_PROJECT_ID or g.wowProjectID==WOW_PROJECT_ID) then
+   if g and g.isInCurrentRegion~=false and (regional() or type(server)=="string" and server~="") and g.clientProgram=="WoW" and (not g.wowProjectID or not WOW_PROJECT_ID or g.wowProjectID==WOW_PROJECT_ID) then
     add(g.characterName,g.realmName or g.realmDisplayName,g.isOnline and not g.isWowMobile,"friend")
     local key,full=C.Identity(g.characterName,g.realmName or g.realmDisplayName)
     if key then chars[key]=full end
@@ -125,8 +125,36 @@ function C.Ready(team)
 end
 local function changed(event)
  local U,S=F.UI,F.Social
+ if U.UpdateDuelInvite then U.UpdateDuelInvite() end
  if S.session and event and U.QueueDuelAnimation then U.QueueDuelAnimation(event) end
  if U.frame and U.frame:IsShown() and (S.session or U.page=="social" or U.page=="leaderboard" or U.page=="duelteam") then U.Render() end
+end
+function C.NoteManualWhisper(message,chatType,language,target)
+ if chatType=="WHISPER" then local key=C.Identity(target);if key then C.manualWhispers[key]=GetTime() end end
+end
+function C.FilterSystemMessage(_,event,message)
+ if event~="CHAT_MSG_SYSTEM" or not plain(message) or not plain(ERR_CHAT_PLAYER_NOT_FOUND_S) then return false end
+ local marker="\001"
+ local pattern=ERR_CHAT_PLAYER_NOT_FOUND_S:gsub("%%s",marker):gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])","%%%1"):gsub(marker,"(.+)")
+ local target=message:match("^"..pattern.."$");local key=target and C.Identity(target)
+ local sent=key and C.recentWhispers[key];local now=GetTime()
+ if not sent or now-sent>8 then return false end
+ if F.Social then F.Social:Unreachable(key) end
+ -- Don't hide an ordinary whisper's error, even if we recently probed the
+ -- same character. Keep this filter limited to our exact target and time window.
+ if C.manualWhispers[key] and now-C.manualWhispers[key]<=12 then return false end
+ return true
+end
+local function send(name,message,channel)
+ if not C.Available() then return false,"chat restricted" end
+ local key=name and C.Identity(name)
+ if channel=="WHISPER" and key and message:match("^1|") then C.recentWhispers[key]=GetTime() end
+ local success,value=pcall(C_ChatInfo.SendAddonMessage,F.socialPrefix,message,channel,name)
+ C.lastSend=success and tostring(value) or "client refused"
+ local results=Enum and Enum.SendAddonMessageResult
+ local unreachable=results and ((results.InvalidTarget and value==results.InvalidTarget) or (results.TargetNotFound and value==results.TargetNotFound))
+ if success and unreachable and key and F.Social then F.Social:Unreachable(key) end
+ return success and (value==0 or value==true),C.lastSend,unreachable
 end
 function C.Start()
  if F.Social then return true end
@@ -140,18 +168,23 @@ function C.Start()
  if not ok or result==false or type(result)=="number" and result>1 then
   C.startStatus="Addon message registration failed ("..C.prefixResult.."). Use /fb linkstatus for details.";return false
  end
+ if not C.chatFilterInstalled and ChatFrame_AddMessageEventFilter then
+  ChatFrame_AddMessageEventFilter("CHAT_MSG_SYSTEM",C.FilterSystemMessage);C.chatFilterInstalled=true
+  if hooksecurefunc then
+   if C_ChatInfo.SendChatMessage then hooksecurefunc(C_ChatInfo,"SendChatMessage",C.NoteManualWhisper) end
+   if SendChatMessage then hooksecurefunc("SendChatMessage",C.NoteManualWhisper) end
+  end
+ end
  local env={me=function() return me end,now=GetTime,wall=GetServerTime or time,contacts=C.Contacts,score=C.Score,ready=C.Ready,available=C.Available,
   unavailableReason=function() local _,reason=C.Available();return reason end,
-  send=function(name,message)
-   if not C.Available() then return false,"chat restricted" end
-   local success,value=pcall(C_ChatInfo.SendAddonMessage,F.socialPrefix,message,"WHISPER",name)
-   C.lastSend=success and tostring(value) or "client refused"
-   return success and (value==0 or value==true),C.lastSend
-  end,
+  send=function(name,message) return send(name,message,"WHISPER") end,
+  inGuild=function() return IsInGuild and IsInGuild() end,
+  guildHello=function(message) return send(nil,message,"GUILD") end,
   changed=changed,
   invite=function(peer)
    local row=F.Social.contacts[peer]
-   DEFAULT_CHAT_FRAME:AddMessage("|cffc2d491Flightbound:|r "..(row and row.name or peer).." invited you to a duel. Use /fb friends to respond.")
+   DEFAULT_CHAT_FRAME:AddMessage("|cffc2d491Flightbound:|r "..(row and row.name or peer).." invited you to a duel. Click Accept Duel in the popup, or use /fb friends.")
+   if F.UI.UpdateDuelInvite then F.UI.UpdateDuelInvite() end
   end}
  F.Social=F.NewSocial(env,FlightboundSocialDB);FlightboundSocialDB=F.Social.saved;F.Social:Refresh()
  C.startStatus="Link initialized. Waiting for online contacts."
@@ -175,24 +208,30 @@ function C.Test()
  C.testStatus="waiting for echo";return "Self-whisper sent. Waiting for its return; no contacts were messaged."
 end
 local events=CreateFrame("Frame");C.events=events
-for _,event in ipairs({"PLAYER_LOGIN","PLAYER_ENTERING_WORLD","CHAT_MSG_ADDON","FRIENDLIST_UPDATE","BN_FRIEND_LIST_SIZE_CHANGED","BN_FRIEND_INFO_CHANGED","GUILD_ROSTER_UPDATE","PLAYER_GUILD_UPDATE","CLUB_MEMBER_UPDATED","CLUB_MEMBER_ADDED","CLUB_MEMBER_REMOVED","CLUB_ADDED","CLUB_REMOVED","PLAYER_LOGOUT"}) do events:RegisterEvent(event) end
+for _,event in ipairs({"PLAYER_LOGIN","PLAYER_ENTERING_WORLD","CHAT_MSG_ADDON","CHAT_MSG_SYSTEM","FRIENDLIST_UPDATE","BN_FRIEND_LIST_SIZE_CHANGED","BN_FRIEND_INFO_CHANGED","GUILD_ROSTER_UPDATE","PLAYER_GUILD_UPDATE","CLUB_MEMBER_UPDATED","CLUB_MEMBER_ADDED","CLUB_MEMBER_REMOVED","CLUB_ADDED","CLUB_REMOVED","PLAYER_LOGOUT"}) do events:RegisterEvent(event) end
 events:SetScript("OnEvent",function(_,event,...)
  if event=="PLAYER_LOGIN" or event=="PLAYER_ENTERING_WORLD" then C.Start();return end
  local S=F.Social;if not S then return end
  if event=="CHAT_MSG_ADDON" then
   local prefix,message,channel,sender=...
-  if prefix==F.socialPrefix and channel=="WHISPER" then
+  if prefix==F.socialPrefix and (channel=="WHISPER" or channel=="GUILD") then
    local key=C.Identity(sender)
-   if C.probe and message==C.probe.token and key==S.me then
+   if channel=="WHISPER" and C.probe and message==C.probe.token and key==S.me then
     C.probe=nil;C.testStatus="received";DEFAULT_CHAT_FRAME:AddMessage("|cffc2d491Flightbound:|r Self-whisper received. Addon whispers work on this character.")
-   elseif key then S:Receive(key,message) end
+   elseif key then S:Receive(key,message,channel) end
   end
+ elseif event=="CHAT_MSG_SYSTEM" then C.FilterSystemMessage(nil,event,...)
  elseif event=="PLAYER_LOGOUT" then S:Persist()
- else S.scanAt=0 end
+ else S.scanAt=0;if event=="PLAYER_GUILD_UPDATE" then S.guildAt=0 end end
 end)
 local elapsed,retry=0,0
 events:SetScript("OnUpdate",function(_,dt)
  elapsed=elapsed+dt;if elapsed<.1 then return end;elapsed=0
+ if GetTime then
+  local now=GetTime()
+  for key,at in pairs(C.recentWhispers) do if now-at>8 then C.recentWhispers[key]=nil end end
+  for key,at in pairs(C.manualWhispers) do if now-at>12 then C.manualWhispers[key]=nil end end
+ end
  if C.probe and GetTime()>=C.probe.expires then
   C.probe=nil;C.testStatus="no echo received";DEFAULT_CHAT_FRAME:AddMessage("|cffc2d491Flightbound:|r No self-whisper arrived. Use /fb linkstatus to check the send result.")
  end
@@ -202,4 +241,5 @@ events:SetScript("OnUpdate",function(_,dt)
   local U=F.UI
   if (started or before~=C.startStatus) and U.frame and U.frame:IsShown() then U.Render() end
  end
+ if F.UI.UpdateDuelInvite then F.UI.UpdateDuelInvite() end
 end)

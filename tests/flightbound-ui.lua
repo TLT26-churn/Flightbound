@@ -68,7 +68,7 @@ function PlaySoundFile(path,channel)
 end
 function StopSound(handle) stopped[#stopped+1]=handle end
 local F={}
-for _,n in ipairs({"Data","Game","Adventure","Campaign","Trainer","DungeonMap","Duel","Social","MapArt","Audio","UI","CombatFX","AdventureUI","DungeonUI","ExplorerUI","Keyboard","SocialClient","SocialUI","Flightbound"}) do assert(loadfile("Flightbound/"..n..".lua"))("Flightbound",F) end
+for _,n in ipairs({"Data","Game","Adventure","Campaign","Trainer","DungeonMap","Duel","Social","MapArt","Audio","UI","CombatFX","AdventureUI","DungeonUI","ExplorerUI","Keyboard","SocialClient","SocialUI","InviteUI","Flightbound"}) do assert(loadfile("Flightbound/"..n..".lua"))("Flightbound",F) end
 local G,U=F.Game,F.UI
 local function fixtureBattle(id,level)
     G.db.battle=nil;G.db.totalWins=math.max(1,G.db.totalWins)
@@ -106,7 +106,7 @@ SlashCmdList.FLIGHTBOUND("scale junk");assert(#chat>0)
 SlashCmdList.FLIGHTBOUND("scale 100");SlashCmdList.FLIGHTBOUND("position");assert(U.frame:IsShown())
 assert(SLASH_FLIGHTBOUND3=="/fb")
 assert(not G.db.trainer);assert(U.trainerBox and not U.trainerBox.focused)
-U.trainerBox:SetText("Aster Ashborne");click(U.actions[1]);assert(G.db.trainer and #G.db.pets==0)
+U.trainerBox:SetText("Valette Ashborne");click(U.actions[1]);assert(G.db.trainer and #G.db.pets==0)
 click(U.actions[1]);assert(#G.db.pets==1);click(U.actions[1]);assert(G.db.dungeon)
 assert(U.wide and U.canvas.scale==1 and U.navigation.shown)
 assert(U.MapZoom()==40)
@@ -218,7 +218,7 @@ assert(r.x==7 and r.y==3 and r.used["7:3"])
 U.page="menu";U.Render();press("TRAINER");local originalRace=G.db.trainer.race
 U.trainerDraft.race="orc";U.trainerDraft.class="WARRIOR";click(U.actions[4]);assert(G.db.trainer.race==originalRace)
 U.page="menu";U.Render();press("TRAINER");U.trainerBox:SetFocus();U.frame:Hide();assert(not U.trainerBox.focused)
-U.Open(true);click(U.actions[1]);assert(G.db.trainer.name=="Aster Ashborne")
+U.Open(true);click(U.actions[1]);assert(G.db.trainer.name=="Valette Ashborne")
 U.page="menu";U.Render();click(U.actions[2]);assert(not G.db.dungeon)
 click(U.actions[1]);assert(G.db.dungeon.used["7:3"])
 U.page="settings";U.Render();local reused=U.pools.button[1];reused.scripts.OnEnter(reused);reused.scripts.OnLeave(reused);assert(reused.fill.alpha==1)
@@ -231,7 +231,7 @@ U.page=nil;U.destination=nil;U.effect=nil
 -- Battle numbers invoke the visible buttons, never a WoW action or an old
 -- callback from another screen. Holding a key cannot take extra turns.
 G.Init(nil,function(a,b) return b and a or 1 end)
-G.SetTrainer({name="Aster Ashborne",race="human",class="WARRIOR",gender=2});G.Start("murloc")
+G.SetTrainer({name="Valette Ashborne",race="human",class="WARRIOR",gender=2});G.Start("murloc")
 G.db.scene=nil;G.db.evolutions={};G.db.totalWins=10;G.Active().level=20;G.Active().hp=G.MaxHP(G.Active())
 fixtureBattle("boar",1);G.db.battle.enemy.hp=1000;G.db.battle.enemy.maxHP=1000
 U.Render();U.SetKeyboard(true,true);mouseDown(U.actions[1])
@@ -290,37 +290,38 @@ local function json(v)
     end
     return 'null'
 end
+local previewRoot
 local function visible(o)
-    if o==U.frame then return o.shown end
+    if o==(previewRoot or U.frame) then return o.shown end
     return o.shown and raw(o,"parent") and visible(o.parent)
 end
 local function scale(o)
-    if o==U.frame then return 1 end -- Exports use addon UI units, independent of WoW's global scale.
+    if o==(previewRoot or U.frame) then return 1 end -- Exports use addon UI units, independent of WoW's global scale.
     return (raw(o,"scale") or 1)*scale(o.parent)
 end
 local function bounds(o)
-    if o==U.frame then return 0,0,o.width,o.height end
+    if o==(previewRoot or U.frame) then return 0,0,o.width,o.height end
     local a=raw(o,"anchor");local x,y=bounds(o.parent)
     assert(a and a[1]=="TOPLEFT" and a[3]=="TOPLEFT","Unexpected preview anchor")
     local s=scale(o)
     return x+a[4]*s,y-a[5]*s,raw(o,"width")*s,raw(o,"height")*s
 end
 local function opacity(o)
-    if o==U.frame then return o.alpha end
+    if o==(previewRoot or U.frame) then return o.alpha end
     return o.alpha*opacity(o.parent)
 end
-local function snapshot(name)
-    U.Render();local scene={}
+local function snapshot(name,root)
+    if not root then U.Render() end;previewRoot=root;root=root or U.frame;local scene={}
     for _,o in ipairs(objects) do
         if (o.kind=="Texture" or o.kind=="FontString" or o.kind=="EditBox") and visible(o) then
             local x,y,w,h=bounds(o)
-            assert(x>=0 and y>=0 and x+w<=U.frame.width+.1 and y+h<=U.frame.height+.1,"Element outside handheld")
+            assert(x>=0 and y>=0 and x+w<=root.width+.1 and y+h<=root.height+.1,"Element outside preview frame")
             scene[#scene+1]={id=o.id,kind=o.kind,x=x,y=y,width=w,height=h,layer=o.kind=="EditBox" and "OVERLAY" or o.layer,frameLevel=o.frameLevel,sublevel=raw(o,"sublevel") or 0,
                 text=raw(o,"text"),color=raw(o,"color"),file=raw(o,"file"),font=raw(o,"font"),fontSize=raw(o,"fontSize") and o.fontSize*scale(o),scale=scale(o),
                 align=raw(o,"align"),coords=raw(o,"coords"),alpha=opacity(o)}
         end
     end
-    local f=assert(io.open("/tmp/flightbound-"..name..".json","w"));f:write(json({width=U.frame.width,height=U.frame.height,items=scene}));f:close()
+    local f=assert(io.open("/tmp/flightbound-"..name..".json","w"));f:write(json({width=root.width,height=root.height,items=scene}));f:close();previewRoot=nil
 end
 if arg[1]=="--showcase" then
     assert(loadfile("tools/export_flightbound_showcase.lua"))(F,G,U,snapshot,json,function(value) taxi=value;F.CheckFlight() end)
@@ -330,14 +331,14 @@ if arg[1]=="--combat-preview" or arg[1]=="--impact-preview" then
     assert(loadfile("tools/export_flightbound_combat.lua"))(F,G,U,snapshot,json,arg[1]=="--impact-preview" and "impact" or "combat")
     return
 end
-G.Init(nil);U.page=nil;U.trainerDraft=nil;U.trainerBox:SetText("Aster Ashborne");snapshot("creator")
+G.Init(nil);U.page=nil;U.trainerDraft=nil;U.trainerBox:SetText("Valette Ashborne");snapshot("creator")
 for i,race in ipairs(F.trainerRaces) do
  for gender=1,2 do
-  U.trainerDraft={name="Aster Ashborne",race=race.id,class=race.classes[#race.classes],gender=gender}
-  U.trainerBox:SetText("Aster Ashborne");snapshot("trainer-"..i.."-"..gender)
+  U.trainerDraft={name="Valette Ashborne",race=race.id,class=race.classes[#race.classes],gender=gender}
+  U.trainerBox:SetText("Valette Ashborne");snapshot("trainer-"..i.."-"..gender)
  end
 end
-G.SetTrainer({name="Aster Ashborne",race="human",class="WARRIOR",gender=2});U.page=nil;snapshot("starter")
+G.SetTrainer({name="Valette Ashborne",race="human",class="WARRIOR",gender=2});U.page=nil;snapshot("starter")
 G.Start("murloc");snapshot("entrance");G.StartDungeon();snapshot("dungeon")
 U.SetKeyboard(true,true);snapshot("keys-active")
 mouseDown(UIParent);snapshot("keys-ready")

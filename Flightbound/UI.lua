@@ -49,6 +49,7 @@ local function button(parent,x,y,w,h,text,callback,shell)
     b:SetScript("OnMouseUp",function(self) self.label:SetAlpha(1);self.icon:SetAlpha(1) end)
     b.callback=callback;return b
 end
+U.Widgets={texture=texture,label=label,button=button}
 function U.Build()
     if U.frame then return end
     local w=CreateFrame("Frame","FlightboundFrame",UIParent)
@@ -124,7 +125,7 @@ function U.Build()
     U.zoomOut=button(U.navigation,366,0,30,28,"-",function() U.SetMapZoom(-1) end,true)
     U.zoomIn=button(U.navigation,402,0,30,28,"+",function() U.SetMapZoom(1) end,true)
     U.zoomLabel=label(U.navigation,444,8,80,14,"",10,ink,"RIGHT")
-    label(w,18,598,236,10,"/FB  /FLIGHTBOUND  V4.8.1",8,{.61,.67,.64,1})
+    label(w,18,598,236,10,"/FB  /FLIGHTBOUND  V4.8.2",8,{.61,.67,.64,1})
     label(w,18,611,236,10,"By Whitebeard Tinkerton - US PVP",7,{.56,.61,.59,1})
     U.keysToggle=button(w,262,600,116,19,"KEYS: OFF",function()
         U.SetKeyboard(not G.db.settings.keyboard,true)
@@ -558,6 +559,7 @@ function U.Render()
     U.UpdateStatus()
     U.CheckKeyboardFocus()
     U.DrawCombatFX()
+    if U.UpdateDuelInvite then U.UpdateDuelInvite() end
 end
 U.Paint={text=text,rect=rect,sprite=sprite,button=smallButton,act=act,run=run,page=page,back=back,heading=heading,dialogue=dialogue,hp=hp,battleAct=battleAct,battleExtra=battleExtra}
 function U.Open(manual)

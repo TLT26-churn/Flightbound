@@ -66,6 +66,7 @@ names += ['fx-'+state for state in ['strike','guard','focus','salve','knockout',
 names += ['battle-result-keys']
 names += ['fx-critical-'+state for state in ['player','enemy','linger','ko','blocked']]
 names += ['social-'+state for state in ['unavailable','club','club-page2','board-all','board-guild','board-friends','board-empty','team','team-page2','invite','duel-start','duel-impact','duel-waiting','duel-swap','duel-options','duel-result','duel-reconnecting','duel-disconnected','sync-off']]
+names += ['invite-popup-ready','invite-popup-team','invite-popup-busy']
 sheet=Image.new('RGBA',(4*380,((len(names)+3)//4)*468),(20,25,29,255))
 for i,name in enumerate(names):
     shot=render(name);x,y=(i%4)*380+10,(i//4)*468+24

@@ -155,4 +155,42 @@ tick(90)
 assert(a.session and b.session and not a.session.ended and not b.session.ended)
 assert(b.session.phase=="active" and b.session.state.seq==156 and D.Hash(a.session.state)==D.Hash(b.session.state),"Long journal did not converge")
 assert(#a.queue<=128 and #b.queue<=128)
+-- Large guild discovery must never whisper unconfirmed roster entries.
+do
+ local t,guild=0,true
+ local roster={friend={name="friend",online=true,friend=true},offline={name="offline",online=false,friend=true}}
+ for i=1,100 do roster["guild"..i]={name="guild"..i,online=true,guild=true} end
+ local traffic={}
+ local function emit(channel,target,msg)
+  assert(#traffic==0 or t-traffic[#traffic].at>=.349,"Global throttle was bypassed")
+  traffic[#traffic+1]={at=t,channel=channel,target=target,msg=msg};return true
+ end
+ local s=F.NewSocial({me=function() return "me" end,now=function() return t end,wall=function() return 1800000000+math.floor(t) end,
+  contacts=function() return roster end,inGuild=function() return guild end,
+  ready=function() return true end,guildHello=function(msg) return emit("GUILD",nil,msg) end,
+  send=function(peer,msg) return emit("WHISPER",peer,msg) end},{})
+ s:Refresh()
+ for i=1,1500 do t=i/10;s:Tick() end
+ local broadcasts=0
+ for _,p in ipairs(traffic) do
+  if p.channel=="GUILD" then broadcasts=broadcasts+1;assert(p.msg:match("^1|H|"))
+  else assert(p.target=="friend","Blind guild-roster whisper escaped") end
+ end
+ assert(broadcasts==3 and #traffic==5,"Discovery should be one guild hello per minute and a friend probe per two minutes")
+ assert(not s:Detected("friend") and not s:Detected("guild1"),"A sent probe is not proof of addon ownership")
+ s:Receive("guild1","1|H|"..F.version.."|1","GUILD")
+ assert(s:Detected("guild1") and s:Compatible("guild1"));assert(s.queue[1].peer=="guild1")
+ s:Receive("friend","1|H|"..F.version.."|1","GUILD");assert(not s:Detected("friend"))
+ s:Receive("friend","1|H|0.0.0|1","WHISPER");assert(s:Detected("friend") and not s:Compatible("friend"))
+ roster.friend.online=false;assert(not s:Detected("friend"));roster.friend.online=true
+ s:Unreachable("friend");assert(not s:Detected("friend"))
+ local start=#traffic
+ for i=1501,4499 do t=i/10;s:Tick() end
+ for i=start+1,#traffic do assert(traffic[i].target~="friend","Unreachable target was retried during cooldown") end
+ assert(not s:Detected("guild1"),"Stale addon presence must disappear")
+ s:Receive("friend","1|H|"..F.version.."|1","WHISPER")
+ assert(s:Detected("friend") and not s.unreachable.friend)
+ s:SetEnabled(false);start=#traffic;t=t+120;s:Tick();assert(#traffic==start and #s.queue==0)
+end
 print("Social: 40 deterministic duels; friend/guild scope; offline cache/removal; loss, duplication, reload/resync, closed-result ACK, long journals, validation, forfeit and timeouts passed.")
+print("Discovery: 100-member guild sends no blind whispers; confirmed-only listing, version/offline/stale filters, cooldown recovery and sync pause passed.")

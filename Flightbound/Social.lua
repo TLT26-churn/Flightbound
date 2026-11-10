@@ -36,13 +36,23 @@ local function scoreFields(r) return r.lane,r.ending,r.badges,r.quests,r.rivals,
 function F.NewSocial(env,saved)
  saved=type(saved)=="table" and saved or {};saved.enabled=saved.enabled~=false
  local S={env=env,saved=saved,contacts={},peers={},queue={},time=0,scanAt=0,sendAt=0,helloAt=0,scoreAt=0,counter=0,
-  status="Waiting for friends and guild roster.",rate={},records={},lastScore=""}
+  status="Waiting for friends and guild roster.",rate={},records={},lastScore="",unreachable={},guildAt=0}
  local me=env.me();S.me=me
  local function now() return env.now() end
  local function wall() return env.wall() end
  local function changed(event) if env.changed then env.changed(event) end end
  local function notice(text) S.status=text;changed() end
- local function samePeer(name) return S.contacts[name] and S.contacts[name].online end
+ local function samePeer(name) return S.contacts[name] and S.contacts[name].online and (S.unreachable[name] or 0)<=now() end
+ local function guildAvailable() return env.guildHello and env.inGuild and env.inGuild() end
+ function S:Unreachable(peer)
+  if not self.contacts[peer] then return end
+  if (self.unreachable[peer] or 0)>now() then return end
+  self.unreachable[peer]=now()+300;self.peers[peer]=nil
+  for i=#self.queue,1,-1 do if self.queue[i].peer==peer then table.remove(self.queue,i) end end
+  for _,key in ipairs({"incoming","outgoing"}) do if self[key] and self[key].peer==peer then self[key]=nil end end
+  if self.session and self.session.peer==peer then self:End("Opponent could not be reached. The duel has ended.")
+  else changed() end
+ end
  function S:Send(peer,op,...)
   if not self.saved.enabled or not samePeer(peer) then return false end
   local text=packet(op,...)
@@ -100,6 +110,10 @@ function F.NewSocial(env,saved)
   local p=self.peers[peer]
   return (samePeer(peer) and p and p.version==F.version and p.duelRules==D.rules and p.seen>now()-180) or false
  end
+ function S:Detected(peer)
+  local p=self.peers[peer]
+  return (samePeer(peer) and p and type(p.version)=="string" and p.version~="" and p.seen and p.seen>now()-180) or false
+ end
  function S:Persist()
   local s=self.session
   if not s then self.saved.duel=nil;return end
@@ -144,7 +158,9 @@ function F.NewSocial(env,saved)
  end
  function S:Accept(team)
   local p=self.incoming;local ids=D.Team(team)
-  if not p or p.expires<now() or not ids or #ids~=#D.Team(p.team) or not env.ready(team) then notice("Choose the same number of owned companions and finish your battle first.");return false end
+  if not p or p.ourTeam or not self.saved.enabled or self.session then return false end
+  if p.expires<=now() or not self:Compatible(p.peer) then self:Decline();notice("That invitation expired or the inviter is no longer available.");return false end
+  if not ids or #ids~=#D.Team(p.team) or not env.ready(team) then notice("Choose the same number of owned companions and finish your battle first.");return false end
   self.counter=self.counter+1
   p.ourTeam=team;p.ourSeed=(wall()+math.floor(now()*1000)+self.counter*104729)%2147483646+1;p.retryAt=now()+3
   self:Send(p.peer,"A",p.id,team,p.ourSeed);notice("Accepted. Connecting the duel...");return true
@@ -162,13 +178,16 @@ function F.NewSocial(env,saved)
   s.phase="syncing";s.retryAt=now()+3;self:Send(s.peer,"R",s.id,s.state.seq,D.Hash(s.state));changed()
  end
  local function ack(self,s,seq,h) self:Send(s.peer,"K",s.id,seq,h) end
- function S:Receive(sender,message)
+ function S:Receive(sender,message,channel)
   if not self.saved.enabled or env.available and not env.available() or not self.contacts[sender] or sender==me then return end
   local f=fields(message);if not f then return end
+  if channel=="GUILD" and (not self.contacts[sender].guild or (f[2]~="H" and f[2]~="h")) then return end
   local rate=self.rate[sender] or {at=now(),n=0};if now()-rate.at>10 then rate={at=now(),n=0} end
   rate.n=rate.n+1;self.rate[sender]=rate;if rate.n>80 then return end
   local op=f[2];local p=self.peers[sender] or {};self.peers[sender]=p
   if (op=="H" or op=="h") and #f==4 and #f[3]<20 and #f[4]<12 then
+   -- A received hello is fresher evidence than a delayed roster snapshot.
+   self.unreachable[sender]=nil;self.contacts[sender].online=true
    p.version=f[3];p.duelRules=f[4];p.seen=now()
    if op=="H" and (not p.replied or now()-p.replied>15) then p.replied=now();self:Send(sender,"h",F.version,D.rules) end
    if p.version==F.version and self.ownScore then self:Send(sender,"S",RULES,scoreFields(self.ownScore)) end
@@ -183,7 +202,7 @@ function F.NewSocial(env,saved)
    if self.incoming and self.incoming.id==f[3] and self.incoming.peer==sender then return end
    if self.session or self.outgoing or self.incoming then self:Send(sender,"N",f[3]);return end
    self.incoming={id=f[3],peer=sender,team=f[4],seed=tonumber(f[5]),expires=now()+60}
-   notice("Duel invitation received. Open FRIENDS / GUILD to accept.");if env.invite then env.invite(sender) end;return
+   notice("Duel invitation received. Accept in the popup or open /fb friends.");if env.invite then env.invite(sender) end;return
   elseif op=="N" and #f==3 then
    local s=self.session
    if s and s.phase=="starting" and s.peer==sender and s.id==f[3] then self:End("Duel cancelled before starting.");return end
@@ -273,11 +292,19 @@ function F.NewSocial(env,saved)
   elseif self.blocked then self.blocked=nil;self.status="Link resumed. Checking online contacts...";changed() end
   if t>=self.scanAt then self:Refresh() end
   if t>=self.scoreAt then self:RefreshScore();self.scoreAt=t+30 end
-  -- Stagger discovery across large guilds; all other traffic shares the same throttle.
+  -- One guild hello replaces individual whispers to every guild roster entry.
+  -- Scores, invitations and turns still travel privately to confirmed peers.
+  local guild=guildAvailable()
+  if guild and t>=self.guildAt and #self.queue<12 then
+   self.guildAt=t+60
+   local exists=false;for _,q in ipairs(self.queue) do if q.guild then exists=true;break end end
+   if not exists then self.queue[#self.queue+1]={guild=true,text=packet("H",F.version,D.rules),tries=0} end
+  end
+  -- Stagger remaining friend probes; all traffic shares the same throttle.
   if t>=self.helloAt and #self.queue<12 then
    self.helloAt=t+1
    local choice,oldest
-   for peer,c in pairs(self.contacts) do if c.online then
+   for peer,c in pairs(self.contacts) do if samePeer(peer) and (not guild or not c.guild) then
     local p=self.peers[peer] or {};local due=p.helloAt or -1
     if due<t and (not oldest or due<oldest) then choice=peer;oldest=due end
    end end
@@ -316,11 +343,13 @@ function F.NewSocial(env,saved)
   end
   if t>=self.sendAt and #self.queue>0 then
    self.sendAt=t+.35;local item=table.remove(self.queue,1);local c=self.contacts[item.peer]
-   if c and c.online then
-    local ok,reason=env.send(c.name,item.text)
+   if item.guild and guild or c and samePeer(item.peer) then
+    local ok,reason,permanent
+    if item.guild then ok,reason,permanent=env.guildHello(item.text)
+    else ok,reason,permanent=env.send(c.name,item.text) end
     if not ok then
      self.status="Link message could not be sent: "..tostring(reason or "unavailable")
-     item.tries=item.tries+1;if item.tries<3 then self.queue[#self.queue+1]=item;self.sendAt=t+1 end;changed()
+     item.tries=item.tries+1;if item.tries<3 and not permanent then self.queue[#self.queue+1]=item;self.sendAt=t+1 end;changed()
     end
    end
   end

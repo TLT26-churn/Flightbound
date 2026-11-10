@@ -30,7 +30,7 @@ Screenshots are rendered from the addon's actual UI and bundled assets using an 
 Works with **WoW Forever (interface 16001)** on **Windows** and **Linux through Wine/Proton**.
 The same ZIP works on both; no external runtime or addon dependency is required.
 
-1. Download `Flightbound-4.8.1.zip` from [Releases](https://github.com/TLT26-churn/Flightbound/releases).
+1. Download `Flightbound-4.8.2.zip` from [Releases](https://github.com/TLT26-churn/Flightbound/releases).
 2. Extract its `Flightbound` folder into your WoW installation's `_forever_/Interface/AddOns/` directory.
 3. Check that `Interface/AddOns/Flightbound/Flightbound.toc` exists, without an extra nested folder.
 4. For a first install, restart WoW and enable Flightbound in the AddOns list. For an update, replace the addon folder and `/reload`.
@@ -42,12 +42,19 @@ Updating 4.8.x preserves your campaign. WoW saves progress during `/reload` or c
 ## Friends, guildmates and duels
 
 Both players need the same addon version and must be friends with each other or share a guild.
-Open `/fb friends`, choose teams of the same size, then invite and accept. Finish any active
-campaign battle before starting. Battle.net friends count when their Forever character is known.
+Open `/fb friends`, choose teams of the same size, then invite. Only online contacts detected
+running Flightbound appear. The recipient gets an **Accept Duel / Choose Team / Decline** popup,
+even with the game window closed; it never takes keyboard focus. Finish any active campaign
+battle before starting. Battle.net friends count when their Forever character is known.
 
 `/fb leaderboard` opens the campaign board. It ranks completion and campaign milestones, with
 separate difficulty boards. Records are self-reported, intended for friendly comparison. There
 is no public/global leaderboard or relay of strangers' records. `/fb sync off` pauses sharing.
+
+**4.8.2 fixes discovery chat spam:** guild discovery uses a hidden guild-channel hello instead
+of scanning the roster with whispers. Unreachable friends pause for five minutes; errors from
+recent Flightbound background sends are filtered while ordinary whisper errors stay visible.
+Invites now have an obvious popup, countdown and optional sound. Both players should update.
 
 **4.8.1 fixes Forever compatibility:** it uses first name + surname, does not mistake a surname
 for a realm, and no longer treats Forever's outgoing-chat flag as a blanket addon-whisper block.
@@ -75,7 +82,7 @@ python3 tests/render_flightbound.py --check-layer-order --animation
 python3 tools/package.py
 ```
 
-The renderer checks 260 screens for text overflow and drawing order. Other checks cover campaign
+The renderer checks 263 screens for text overflow and drawing order. Other checks cover campaign
 completion, combat rules, keyboard focus, friend/guild admission, lost and duplicated packets,
 reload recovery, long turn histories and campaign isolation. These tests complement live-client testing.
 The packaging command creates `dist/Flightbound-<version>.zip` containing only the portable addon folder.

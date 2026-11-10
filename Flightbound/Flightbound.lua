@@ -90,7 +90,7 @@ SlashCmdList.FLIGHTBOUND=function(input)
         if not F.Social then say("Link services are unavailable on this character.")
         elseif arg=="off" or arg=="on" then
             if not F.Social:SetEnabled(arg=="on") then say("Finish or leave the current duel before changing sync.") end
-        else F.Social:Refresh();for _,p in pairs(F.Social.peers) do p.helloAt=0 end;say("Checking online friends and guildmates for Flightbound.") end
+        else F.Social:Refresh();F.Social.guildAt=0;for _,p in pairs(F.Social.peers) do p.helloAt=0 end;say("Checking online friends and guildmates for Flightbound.") end
     elseif command=="show" then U.Open(true)
     elseif command=="hide" then if U.frame then U.frame:Hide() end
     elseif command=="" then
