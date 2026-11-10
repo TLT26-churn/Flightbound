@@ -1,0 +1,27 @@
+## Interface: 16001
+## Title: Flightbound
+## Notes: A pocket-sized Azeroth creature adventure for your flight paths.
+## Author: Whitebeard Tinkerton - US PVP
+## Version: 4.8.1
+## SavedVariables: FlightboundDB, FlightboundBackupDB, FlightboundSocialDB
+## DefaultState: enabled
+
+Data.lua
+Game.lua
+Adventure.lua
+Campaign.lua
+Trainer.lua
+DungeonMap.lua
+Duel.lua
+Social.lua
+MapArt.lua
+Audio.lua
+UI.lua
+CombatFX.lua
+AdventureUI.lua
+DungeonUI.lua
+ExplorerUI.lua
+Keyboard.lua
+SocialClient.lua
+SocialUI.lua
+Flightbound.lua

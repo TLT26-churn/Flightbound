@@ -1,0 +1,9 @@
+*.lua text eol=lf
+*.toc text eol=lf
+*.md text eol=lf
+*.py text eol=lf
+*.yml text eol=lf
+*.tga binary
+*.ttf binary
+*.ogg binary
+*.png binary
