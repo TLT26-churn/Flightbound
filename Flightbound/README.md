@@ -1,4 +1,4 @@
-# Flightbound 4.9.0 — Adventure Console
+# Flightbound 4.9.1 — Adventure Console
 
 A small, movable Game Boy-style creature RPG inside WoW Forever. The trainer
 now walks an actual dungeon map. The room-card selection flow is replaced by
@@ -11,9 +11,13 @@ The result must contain `Interface/AddOns/Flightbound/Flightbound.toc`, without
 an extra nested folder. For a first install, restart WoW and enable Flightbound
 in the character screen's AddOns list. To update, replace the existing addon
 folder, then use `/reload` when convenient. Open with `/fb`.
-The footer should read **v4.9.0**. Compatible with WoW Forever (interface 16001),
+The footer should read **v4.9.1**. Compatible with WoW Forever (interface 16001),
 Windows and Linux through Wine/Proton. No external program is needed.
 `/flightbound` and `/fbound` still work; `/fb` also accepts their subcommands.
+
+**4.9.1 startup fix:** handles blank icon and button labels returning nil from
+WoW, which could stop `/fb` and `/flightbound` from opening the console. No
+campaign reset or gameplay changes. Reload after updating.
 
 **4.9.0 preserves your current campaign save.** It adds the Adventure Console,
 hidden randomized enemy attacks, optional rooms and caches, steadier progression,
@@ -41,7 +45,7 @@ Decline and a countdown. One alert respects the Sound setting. No save reset.
 
 ## Friendly duels
 
-Both players need **Flightbound 4.9.0**, must be online in WoW Forever,
+Both players need **Flightbound 4.9.1**, must be online in WoW Forever,
 and must appear in each other's friends list or share a guild. Battle.net
 friends count when their Forever character is available; previously
 seen characters remain recognizable while that Battle.net friendship exists.
@@ -54,7 +58,7 @@ seen characters remain recognizable while that Battle.net friendship exists.
 3. Select **Duel** beside a ready contact. Your friend clicks **Accept Duel**
    in the invitation popup. **Choose Team** opens the team picker if needed;
    save a matching team size, then accept. `/fb friends` also has Accept Duel.
-   Invitations expire after a minute. Both players must update to 4.9.0.
+   Invitations expire after a minute. Both players must update to 4.9.1.
 4. Take alternating turns using Strike, named Special, Defense, Swap and Focus.
    With keys enabled: **1** Strike, **2** Special, **3** Defense, **4** Swap,
    **5** Duel Menu, **6** Focus. Choose a replacement companion with the mouse or **1–3**; **0** goes back.

@@ -2,7 +2,7 @@
 ## Title: Flightbound
 ## Notes: A pocket-sized Azeroth creature adventure for your flight paths.
 ## Author: Whitebeard Tinkerton - US PVP
-## Version: 4.9.0
+## Version: 4.9.1
 ## SavedVariables: FlightboundDB, FlightboundBackupDB, FlightboundSocialDB
 ## DefaultState: enabled
 

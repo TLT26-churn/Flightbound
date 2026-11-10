@@ -17,7 +17,12 @@ function methods:SetFrameStrata(s) self.strata=s end
 function methods:SetScale(v) self.scale=v end
 function methods:SetFont(file,size) self.font,self.fontSize=file,size end
 function methods:SetText(v) self.text=tostring(v) end
-function methods:GetText() return self.text end
+function methods:GetText()
+    -- WoW returns nil for an empty FontString; EditBox text remains a string.
+    -- Treating every empty label as "" hid the 4.9.0 console startup crash.
+    if self.kind=="FontString" and self.text=="" then return nil end
+    return self.text
+end
 function methods:SetAutoFocus(value) self.autoFocus=value end
 function methods:SetMaxLetters(value) self.maxLetters=value end
 function methods:SetTextInsets() end
@@ -90,6 +95,17 @@ event("ADDON_LOADED","OtherAddon");assert(not FlightboundDB)
 event("ADDON_LOADED","Flightbound");event("PLAYER_LOGIN");assert(not U.frame)
 -- Fear/other control loss does not open the minigame.
 event("PLAYER_CONTROL_LOST");assert(not U.frame)
+-- Both aliases must open a fully built console on first use with nil blank labels.
+local function slash(alias)
+    for i=1,3 do if _G["SLASH_FLIGHTBOUND"..i]==alias then SlashCmdList.FLIGHTBOUND("");return end end
+    error("Slash command is not registered: "..alias)
+end
+assert(U.Title(nil)=="" and U.Sentence(nil)=="")
+slash("/fb");assert(U.frame:IsShown() and U.canvas and U.keysToggle and U.trainerBox)
+assert(U.menuButton.label:GetText()==nil,"Blank icon labels must exercise WoW's nil return")
+slash("/flightbound");assert(not U.frame:IsShown())
+slash("/flightbound");assert(U.frame:IsShown() and U.actions[1]:IsEnabled())
+slash("/fb");assert(not U.frame:IsShown())
 -- Delayed taxi state is detected by the poll; closing during a flight stays closed.
 taxi=true;poll();assert(U.frame:IsShown() and F.autoOpened)
 U.frame:Hide();poll();assert(not U.frame:IsShown());taxi=false;poll();taxi=true;poll()

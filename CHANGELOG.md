@@ -1,5 +1,11 @@
 # Release notes
 
+## 4.9.1
+
+- Fix a window-opening error from blank icon/button labels returning nil from WoW FontString:GetText. Both `/fb` and `/flightbound` can build the console again.
+- Treat absent captions as empty when styling and hiding unused actions.
+- Make the UI test harness reproduce nil empty FontStrings and cover both slash aliases on first open. No save or gameplay changes.
+
 ## 4.9.0
 
 - Replace the detached controls with the Adventure Console: classic WoW framing, parchment headings, an attached companion bar, two rows of battle actions, and consistent title/sentence case.

@@ -9,12 +9,14 @@ local dark,edge,navy={.075,.065,.05,1},{.42,.35,.23,1},{.035,.04,.10,1}
 local path=F.path.."Art\\Console\\"
 local abbreviations={hp="HP",xp="XP",pvp="PvP",us="US",wow="WoW"}
 function U.Title(value)
+ value=value or "" -- Empty WoW FontStrings can return nil from GetText().
  if value:find("%l") then return value end
  return (value:lower():gsub("%a[%w']*",function(word)
   return abbreviations[word] or word:sub(1,1):upper()..word:sub(2)
  end))
 end
 function U.Sentence(value)
+ value=value or ""
  if value:find("%l") then return value end
  local result=value:lower():gsub("%a[%w']*",function(word) return abbreviations[word] or word end)
  return (result:gsub("%a",string.upper,1))
@@ -39,7 +41,7 @@ function U.RefreshButtonSkin(b)
  local w,h=b.buttonWidth,b.buttonHeight
  b.label:SetText(U.Title(b.label:GetText()))
  b:SetAlpha(1)
- local hidden=b.label:GetText()=="" and not b.consoleArrow
+ local hidden=(b.label:GetText() or "")=="" and not b.consoleArrow
  local primary=b.consoleStyle~="slot"
  b.edge:SetColorTexture(unpack(edge));b.fill:SetColorTexture(unpack(primary and {.28,.025,.015,1} or {.11,.095,.07,1}))
  local widths,heights={6,math.max(1,w-12),6},{6,math.max(1,h-12),6}
@@ -219,7 +221,7 @@ end
 function U.FinishConsole()
  if G.db.trainer then U.emblem:SetTexture(path..G.TrainerArt().."_portrait.tga") end
  for i,b in ipairs(U.actions) do
-  if b.label:GetText()=="" then b:Hide() else b:Show();resize(b,U.frame,18+(i-1)%2*280,526+math.floor((i-1)/2)*40,272,35,i==1 and "primary" or "slot") end
+  if (b.label:GetText() or "")=="" then b:Hide() else b:Show();resize(b,U.frame,18+(i-1)%2*280,526+math.floor((i-1)/2)*40,272,35,i==1 and "primary" or "slot") end
  end
  if U.exploring then
   local d,r,p=G.db,G.db.dungeon,G.Active()
