@@ -193,7 +193,7 @@ local function drawPop(i,p)
  end
  -- A short gold chip follows the green HP fill, without changing actual HP.
  if not tick and age<.38 and U.CombatPet(hit.target).hp==hit.afterHP then
-  local x,y,w=hit.target=="enemy" and 13 or 131,hit.target=="enemy" and 84 or 163,hit.target=="enemy" and 146 or 178
+  local pos=U.hpPositions[hit.target];local x,y,w=pos.x,pos.y,pos.w
   local start=w*hit.afterHP/p.maxHP;local lost=w*(hit.beforeHP-hit.afterHP)/p.maxHP
   local remaining=1-clamp((age-.07)/.31,0,1);remaining=remaining*remaining
   local chip=U.hpChips[hit.target]

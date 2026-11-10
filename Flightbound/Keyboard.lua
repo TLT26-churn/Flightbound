@@ -38,24 +38,29 @@ function U.BattleResultAvailable()
     return b and b.result and not U.effect and not G.db.pendingName and U.battleVisible
         and U.resultAction and U.actions[1]:IsEnabled()
 end
+function U.PageContinueAvailable()
+    local b=U.advanceAction
+    return b and not U.effect and b:IsShown() and b:IsEnabled() and b.callback
+end
 function U.UpdateKeyboardIndicator()
     if not U.keysToggle then return end
     local enabled=G.db.settings.keyboard==true
-    local label="KEYS: "..(enabled and "ON" or "OFF")
+    local label="Keys: "..(enabled and "On" or "Off")
     if U.keysLabel~=label then U.keysToggle.label:SetText(label);U.keysLabel=label end
-    local hint=""
+    local hint="Click Keys to enable keyboard controls"
     if enabled then
-        if inCombat() then hint="KEYS PAUSED: COMBAT"
-        elseif typing() then hint="KEYS PAUSED: TYPING"
+        if inCombat() then hint="Keys paused: combat"
+        elseif typing() then hint="Keys paused: typing"
         elseif U.keyboardFocused then
-            hint=U.BattleResultAvailable() and "SPACE: "..U.actions[1].label:GetText().."\nESC: RELEASE KEYS"
-                or U.DungeonKeysAvailable() and "ARROWS ACTIVE / ESC\nSPACE: INTERACT"
-                or U.battleHotkeys and next(U.battleHotkeys) and "BATTLE: NUMBER KEYS\nESC: RELEASE KEYS"
-                or "KEYS ACTIVE / ESC\nDUNGEON KEYS PAUSED"
-        elseif outsideKeyHeld() then hint="RELEASE HELD KEYS"
-        else hint="CLICK WINDOW TO FOCUS" end
+            hint=(U.BattleResultAvailable() or U.PageContinueAvailable()) and "Space: "..U.actions[1].label:GetText().."\nEsc: release keys"
+                or U.DungeonKeysAvailable() and "Arrows: move / Esc: release\nSpace: interact"
+                or U.rowHotkeys and next(U.rowHotkeys) and (U.duelView and "1–3: swap / 0: back\nEsc: release keys" or "1–4: select / 0: back / Esc: release\n5: previous / 6: next")
+                or U.battleHotkeys and next(U.battleHotkeys) and "Battle: number keys\nEsc: release keys"
+                or "Keys active / Esc: release\nDungeon keys paused"
+        elseif outsideKeyHeld() then hint="Release held keys"
+        else hint="Click window to focus" end
     end
-    if U.keysHintText~=hint then U.keysHint:SetText(hint);U.keysHintText=hint end
+    if U.keysHintText~=hint then U.keysHint:SetText(U.Sentence(hint));U.keysHintText=hint end
     if U.keysOutline~=U.keyboardFocused then
         U.keysOutline=U.keyboardFocused
         for _,edge in ipairs(U.focusEdges) do if U.keyboardFocused then edge:Show() else edge:Hide() end end
@@ -123,6 +128,7 @@ function U.BuildKeyboard()
             held[key]=true
             if numbers[key] then U.BattleKey(numbers[key])
             elseif key=="SPACE" and U.BattleResultAvailable() then U.resultAction()
+            elseif key=="SPACE" and U.PageContinueAvailable() then U.advanceAction.callback()
             elseif U.DungeonKeysAvailable() then
                 if key=="SPACE" then G.InteractDungeon()
                 else local v=directions[key];G.StepDungeon(v[1],v[2]) end

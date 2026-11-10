@@ -1,5 +1,5 @@
 local _, F = ...
-F.version = "4.8.2"
+F.version = "4.9.0"
 F.path = "Interface\\AddOns\\Flightbound\\"
 -- Original little sprites and a self-contained game. No live-unit data is used.
 F.species = {
@@ -34,9 +34,9 @@ F.zones = {
 F.palette = {dark={.13,.21,.16,1}, mid={.34,.45,.29,1}, soft={.57,.66,.40,1}, light={.76,.83,.57,1}}
 
 F.difficulties={
-    story={name="STORY",attack=.75,health=.90,recovery=.15},
-    adventure={name="ADVENTURE",attack=1,health=1.08,recovery=.04},
-    veteran={name="VETERAN",attack=1.2,health=1.2,recovery=0},
+    story={name="STORY",attack=.75,health=.90,recovery=.15,guardian=1,rise=1},
+    adventure={name="ADVENTURE",attack=1,health=1.08,recovery=.04,guardian=1.2},
+    veteran={name="VETERAN",attack=1.2,health=1.2,recovery=0,guardian=1.25},
 }
 F.zones[7]={name="Winterspring",level=16,wild={"wolf","harpy","wisp","treant"},boss="harpy",title="Frostwing",terrain="tree"}
 F.zones[8]={name="Silithus",level=19,wild={"spider","ooze","imp","ghoul"},boss="spider",title="The Brood Empress",terrain="rock"}

@@ -160,36 +160,22 @@ end
 function U.pages.duel()
  local S=F.Social;local s=S and S.session;if not s then U.pages.social();return end
  U.battleVisible=true;local v=U.duelView;local p,enemy=U.CombatPet("player"),U.CombatPet("enemy")
- local theme=G.BattleTheme({kind="arena"});local t=s.state.teams[s.side]
- rect(0,0,328,272,theme.panel):SetDrawLayer("BACKGROUND",-7)
- sprite("Battles\\"..theme.id,0,32,328,164):SetDrawLayer("BACKGROUND",-6)
- local function panel(x,y,w,h)
-  rect(x,y,w,h,theme.edge,"OVERLAY"):SetDrawLayer("OVERLAY",-4)
-  rect(x+1,y+1,w-2,h-2,theme.panel,"OVERLAY"):SetDrawLayer("OVERLAY",-3)
- end
- panel(8,34,198,78);panel(126,118,196,76);panel(8,199,312,65)
+ local t=s.state.teams[s.side]
  local result=v.result and not U.effect and (not U.duelQueue or #U.duelQueue==0)
  local title=result and ({win="DUEL WON!",lost="DUEL LOST",draw="DUEL ENDED"})[v.result]
   or s.phase~="active" and "CONNECTING..." or U.effect and "TURN "..s.state.seq or canMove() and "YOUR TURN" or "OPPONENT'S TURN"
- text(10,9,308,17,title,12,nil,theme.ink);rect(10,28,308,2,theme.edge,"BORDER")
- text(12,38,192,27,G.Name(enemy),11,nil,theme.ink);text(12,66,190,12,"FOE: "..short(name(s.peer),24),9,nil,theme.ink)
- H.hp(12,83,148,enemy,theme);text(12,95,180,13,"L14  "..enemy.hp.."/"..G.MaxHP(enemy).." HP",8,nil,theme.ink)
- sprite(G.Art(enemy),218,34,92,92,true,result and v.result=="win","enemy")
- sprite(G.Art(p),16,100,96,96,false,false,"player")
- text(130,123,188,25,G.Name(p),11,nil,theme.ink)
  local alive=0;for _,pet in ipairs(t.pets) do if pet.hp>0 then alive=alive+1 end end
- text(130,145,188,13,"L14 "..F.species[p.id].kind.."  TEAM "..alive.."/"..#t.pets,9,nil,theme.ink)
- H.hp(130,162,180,p,theme);text(130,175,188,13,"HP "..p.hp.."/"..G.MaxHP(p),9,nil,theme.ink)
  local log=U.CombatLog()
  if result then log=s.pending and "Confirming the result with your opponent..." or (s.reason or (v.result=="win" and "You won the friendly duel!" or "The duel is over.")).." Your campaign is unchanged." end
- text(16,208,296,52,log,#log>145 and 10 or 11,nil,theme.ink)
+ U.BattleScene(p,enemy,title,"Friendly duel / "..short(name(s.peer),28),log,result and v.result=="win",
+  F.species[enemy.id].kind,F.species[p.id].kind.." / Team "..alive.."/"..#t.pets)
  if result then
   act(1,"BACK TO CLUB",run(function() S:Leave();U.page="social" end),not s.pending)
   if not s.pending then U.resultAction=U.actions[1].callback end
   for i=2,4 do act(i,"",nil,false) end
  else
   local enabled=canMove();U.battleControls:Show()
-  U.battleTip:SetText(s.phase~="active" and "RESUMING THE SHARED TURN LOG..." or S.env.now()-s.lastHeard>25 and "CONNECTION QUIET. RETRYING AUTOMATICALLY..." or "SHARED COOLDOWNS / FULL LEVEL-14 TEAMS / NO CAMPAIGN COST")
+  if s.phase~="active" or S.env.now()-s.lastHeard>25 then U.battleTip:SetText("Connection quiet. Resuming the shared turn log...") end
   H.battleAct(1,"STRIKE","BASIC ATTACK",run(function() S:Move("strike") end),enabled)
   H.battleAct(2,G.Spec(p).move,t.cooldown>0 and "WAIT "..t.cooldown.." TURNS" or "SPECIAL / READY",run(function() S:Move("special") end),enabled and t.cooldown==0)
   H.battleAct(3,F.defensiveMoves[p.id],t.defense>0 and "WAIT "..t.defense.." TURNS" or "BLOCK NEXT HIT",run(function() S:Move("guard") end),enabled and t.defense==0 and not t.guard)
@@ -203,10 +189,11 @@ function U.pages.duelswap()
  for i,p in ipairs(s.state.teams[s.side].pets) do
   local y=43+(i-1)*49;sprite(G.Art(p),12,y,40,40)
   text(62,y+2,166,18,G.Name(p),10);text(62,y+22,166,14,"HP "..p.hp.."/"..G.MaxHP(p),9)
-  button(237,y+8,79,27,"SELECT",run(function() if S:Move("swap",i) then U.page="duel" end end),canMove() and D.Legal(s.state,s.side,"swap",i))
+  U.rowHotkeys[tostring(i)]=button(237,y+8,79,27,i.." SELECT",run(function() if S:Move("swap",i) then U.page="duel" end end),canMove() and D.Legal(s.state,s.side,"swap",i))
  end
  dialogue("Switching spends your turn. Cooldowns stay with the team. Your campaign companions are unaffected.")
  act(1,"BACK",page("duel"));for i=2,4 do act(i,"",nil,false) end
+ U.rowHotkeys["0"]=U.actions[1]
 end
 function U.pages.dueloptions()
  heading("FRIENDLY DUEL")

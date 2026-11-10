@@ -1,4 +1,5 @@
-"""Render the addon draw tree using its actual pixel font and sprite assets."""
+"""Render actual addon draw calls/assets. WoW's native Friz font uses a local
+serif substitute for headless previews; the installed addon uses the game font."""
 from pathlib import Path
 from PIL import Image,ImageDraw,ImageFont,ImageOps,ImageChops
 import json,sys
@@ -6,6 +7,8 @@ ROOT=Path(__file__).resolve().parents[1]
 order={'BACKGROUND':0,'BORDER':1,'ARTWORK':2,'OVERLAY':3}
 warnings=[]
 def local(path):
+    if path == 'Fonts\\FRIZQT__.TTF':
+        return next(Path('/usr/share/fonts').rglob('DejaVuSerif.ttf'))
     return ROOT/Path(path.replace('Interface\\AddOns\\','').replace('\\','/'))
 def render(name,tie_order='forward',save=True):
     scene=json.loads(Path('/tmp/flightbound-'+name+'.json').read_text())
@@ -14,13 +17,20 @@ def render(name,tie_order='forward',save=True):
         tie=item['id'] if tie_order=='forward' else -item['id'] if tie_order=='reverse' else (item['id']*7919)%104729
         return item['frameLevel'],order[item['layer']],item.get('sublevel',0),tie
     for item in sorted(scene['items'],key=draw_key):
-        x,y,w,h=[round(item[k]) for k in ('x','y','width','height')]
+        x,y=round(item['x']),round(item['y'])
+        # Shared edges round to the same pixel, including nine-slice borders
+        # positioned at half-pixels by a scaled WoW frame.
+        w,h=round(item['x']+item['width'])-x,round(item['y']+item['height'])-y
         if w<=0 or h<=0: continue
         alpha=item.get('alpha',1)
         if item['kind']=='Texture':
             if item.get('file'):
                 t=Image.open(local(item['file'])).convert('RGBA')
-                if item.get('coords',[0])[0]==1:t=ImageOps.mirror(t)
+                coords=item.get('coords')
+                if coords:
+                    l,r,top,bottom=coords
+                    if l>r:t=ImageOps.mirror(t);l,r=1-l,1-r
+                    t=t.crop((round(l*t.width),round(top*t.height),round(r*t.width),round(bottom*t.height)))
                 t=t.resize((w,h),Image.Resampling.NEAREST)
             else:
                 t=Image.new('RGBA',(w,h),tuple(round(255*c) for c in item['color']))

@@ -68,7 +68,7 @@ function PlaySoundFile(path,channel)
 end
 function StopSound(handle) stopped[#stopped+1]=handle end
 local F={}
-for _,n in ipairs({"Data","Game","Adventure","Campaign","Trainer","DungeonMap","Duel","Social","MapArt","Audio","UI","CombatFX","AdventureUI","DungeonUI","ExplorerUI","Keyboard","SocialClient","SocialUI","InviteUI","Flightbound"}) do assert(loadfile("Flightbound/"..n..".lua"))("Flightbound",F) end
+for _,n in ipairs({"Data","Game","Adventure","Campaign","Trainer","DungeonMap","Duel","Social","MapArt","Audio","UI","Console","CombatFX","AdventureUI","DungeonUI","ExplorerUI","Keyboard","SocialClient","SocialUI","InviteUI","Flightbound"}) do assert(loadfile("Flightbound/"..n..".lua"))("Flightbound",F) end
 local G,U=F.Game,F.UI
 local function fixtureBattle(id,level)
     G.db.battle=nil;G.db.totalWins=math.max(1,G.db.totalWins)
@@ -78,9 +78,9 @@ local function event(name,arg)
     for _,f in ipairs(frames) do if f.events[name] then f.scripts.OnEvent(f,name,arg) end end
 end
 local function poll() F.events.scripts.OnUpdate(F.events,.8) end
-local function click(b) assert(b:IsEnabled());assert(b.scripts.OnClick);b.scripts.OnClick(b) end
+local function click(b) assert(b:IsShown(),"Cannot click a hidden control");assert(b:IsEnabled());assert(b.scripts.OnClick);b.scripts.OnClick(b) end
 local function press(value)
-    for _,b in ipairs(U.pools.button) do if b.shown and b.label.text==value then click(b);return end end
+    for _,b in ipairs(U.pools.button) do if b.shown and b.label.text==U.Title(value) then click(b);return end end
     if U.navigation.shown then
         for _,b in ipairs(U.moveButtons) do if b.moveKey==value then click(b);return end end
     end
@@ -111,10 +111,12 @@ click(U.actions[1]);assert(#G.db.pets==1);click(U.actions[1]);assert(G.db.dungeo
 assert(U.wide and U.canvas.scale==1 and U.navigation.shown)
 assert(U.MapZoom()==40)
 local savedRun=G.db.dungeon
+click(U.actions[2]);assert(U.page=="chart")
 click(U.zoomIn);assert(U.MapZoom()==48 and not U.zoomIn:IsEnabled())
 click(U.zoomOut);click(U.zoomOut);assert(U.MapZoom()==32 and not U.zoomOut:IsEnabled())
 G.Init(G.db);U.Render();assert(U.MapZoom()==32 and G.db.dungeon==savedRun,"Zoom preserves and reloads with progress")
 click(U.zoomIn);assert(U.MapZoom()==40)
+click(U.actions[1]);assert(U.page==nil)
 local r=G.db.dungeon;local x,y=r.x,r.y
 for i=1,30 do U.Animate(.2) end
 assert(r.x==x and r.y==y,"Map must not walk automatically")
@@ -181,19 +183,19 @@ SlashCmdList.FLIGHTBOUND("keys on");mouseDown(U.frame)
 assert(not key("OnKeyDown","LEFT") and not key("OnKeyUp","LEFT"));assert(r.x==x and r.y==y)
 click(U.actions[2]);assert(U.page=="chart" and U.wide and not U.navigation.shown);click(U.actions[1]);assert(U.page==nil)
 assert(U.keyboardFocused and U.keyboard.shown,"Bottom controls and chart navigation must retain window focus")
-assert(U.keysHint.text:find("SPACE: INTERACT",1,true))
+assert(U.keysHint.text:upper():find("SPACE: INTERACT",1,true))
 -- Space interacts once, never leaks a jump or repeats the chest reward.
 r.x,r.y=3,13;G.RevealDungeon();U.Render();local gold=G.db.coins
 assert(not key("OnKeyDown","SPACE") and r.used["3:13"] and G.db.coins>gold)
 gold=G.db.coins;assert(not key("OnKeyDown","SPACE") and G.db.coins==gold)
 assert(not key("OnKeyUp","SPACE"));r.x,r.y=x,y;U.Render()
-mouseDown(U.actions[4]);click(U.actions[4]);assert(U.page=="menu" and U.keyboardFocused)
+mouseDown(U.menuButton);click(U.menuButton);assert(U.page=="menu" and U.keyboardFocused)
 local menuX,menuY=r.x,r.y
 assert(not key("OnKeyDown","RIGHT") and not key("OnKeyUp","RIGHT"))
 assert(not key("OnKeyDown","SPACE") and not key("OnKeyUp","SPACE"))
 assert(r.x==menuX and r.y==menuY and G.db.dungeon==r,"Menus capture movement without operating the dungeon")
 click(U.actions[1]);assert(U.page==nil and U.keyboardFocused)
-click(U.actions[3]);assert(U.page=="team" and not U.wide and U.canvas.scale==1.5 and not U.navigation.shown);press("NAME");assert(U.nameBox.focused)
+click(U.actions[3]);assert(U.page=="team" and not U.wide and U.canvas.scale==1.65 and not U.navigation.shown);press("NAME");assert(U.nameBox.focused)
 U.nameBox:SetText("Pebbles");U.nameBox.scripts.OnEnterPressed(U.nameBox)
 assert(G.Active().nickname=="Pebbles" and not U.nameBox.focused)
 click(U.actions[3]);x,y=r.x,r.y;SlashCmdList.FLIGHTBOUND("hide");SlashCmdList.FLIGHTBOUND("show")
@@ -237,7 +239,7 @@ fixtureBattle("boar",1);G.db.battle.enemy.hp=1000;G.db.battle.enemy.maxHP=1000
 U.Render();U.SetKeyboard(true,true);mouseDown(U.actions[1])
 local b=G.db.battle
 assert(U.actions[2].label.text==G.Spec(G.Active()).move)
-assert(U.actions[3].label.text==F.defensiveMoves.murloc and U.keysHint.text:find("NUMBER KEYS",1,true))
+assert(U.actions[3].label.text==F.defensiveMoves.murloc and U.keysHint.text:upper():find("NUMBER KEYS",1,true))
 local function tap(number)
     assert(not key("OnKeyDown",number),"Battle key leaked to WoW: "..number)
     assert(not key("OnKeyUp",number),"Battle key release leaked: "..number)
@@ -249,7 +251,7 @@ assert(not key("OnKeyUp","1"));tap("2");assert(b.turn==2 and b.cooldown==2)
 tap("2");assert(b.turn==2 and b.cooldown==2,"Cooldown key must not spend a turn")
 tap("3");assert(b.turn==3 and b.defenseCooldown==2 and not U.actions[3]:IsEnabled())
 tap("3");assert(b.turn==3 and b.defenseCooldown==2)
-tap("4");assert(U.page=="bag" and U.actions[1].label.text:find("SALVE",1,true))
+tap("4");assert(U.page=="bag" and U.actions[1].label.text:lower():find("salve",1,true))
 tap("4");assert(U.page==nil and b.turn==3,"Browsing bag must not tick cooldowns")
 mouseDown(U.actions[4]);click(U.actions[4]);assert(U.page=="bag" and U.keyboardFocused)
 G.Active().hp=50;local salves=G.db.salves;tap("1")
@@ -348,7 +350,7 @@ physicalKeys.UP=true;snapshot("keys-held");physicalKeys.UP=nil
 U.page="menu";snapshot("keys-menu");U.page=nil;U.SetKeyboard(false)
 local r=G.db.dungeon
 for _,v in ipairs({{1,0},{1,0}}) do G.StepDungeon(v[1],v[2]) end;snapshot("corridor")
-G.StepDungeon(1,0);snapshot("battle");G.db.battle.enemy.hp=1;G.Action("charm");snapshot("tame-name")
+G.StepDungeon(1,0);snapshot("battle");G.db.battle.enemy.hp=1;U.Turn("charm");snapshot("tame-name")
 assert(U.renameNew and U.nameBox.focused);U.nameBox:SetText("WWWWWWWWWWWWWWWW");snapshot("tame-name-long")
 U.nameBox.scripts.OnEscapePressed(U.nameBox);assert(not G.db.pendingName and G.FindPet("wolf").nickname==nil)
 G.Continue();G.db.evolutions={}
@@ -459,8 +461,8 @@ G.SetTrainer(G.PlayerTrainer());G.Start("wolf");G.StartDungeon();G.db.scene=nil;
 G.Encounter(false,{id="murloc",level=3,kind="wild",dungeonKey="7:3"});G.db.battle.enemy.hp=1
 U.Open(true);U.SetKeyboard(true,true);assert(U.Turn("strike"))
 assert(not key("OnKeyDown","SPACE") and G.db.battle,"Space during impact must not skip the result")
-U.Animate(1);assert(U.actions[1].label.text=="BACK TO MAP")
-assert(U.keysHint.text:find("SPACE: BACK TO MAP",1,true));snapshot("battle-result-keys")
+U.Animate(1);assert(U.actions[1].label.text=="Back To Map")
+assert(U.keysHint.text:upper():find("SPACE: BACK TO MAP",1,true));snapshot("battle-result-keys")
 assert(not key("OnKeyDown","SPACE") and G.db.battle,"Holding Space across the result must not continue")
 assert(not key("OnKeyUp","SPACE"))
 U.page="help";U.Render();tap("SPACE");assert(G.db.battle,"Space on help must not dismiss a hidden result")
@@ -471,6 +473,27 @@ assert(not key("OnKeyDown","SPACE") and not G.db.battle and G.db.dungeon.used["7
 assert(not key("OnKeyDown","SPACE") and interactions==0,"Result press must not interact again on the map")
 assert(not key("OnKeyUp","SPACE"));G.InteractDungeon=interact;U.ReleaseKeyboard(true)
 print("Result keyboard: Space continues only the visible result, requires a fresh press and respects focus.")
+-- Continued keyboard flow through story/evolution/clear screens and team swaps.
+U.frame:Hide();G.Init(nil,function(a,b) return b and a or 1 end)
+G.SetTrainer(G.PlayerTrainer());G.Start("wolf");U.page=nil;U.Open(true);U.SetKeyboard(true,true)
+assert(U.PageContinueAvailable());tap("SPACE");assert(G.db.dungeon)
+G.db.evolutions={{id="wolf",tier=2}};U.page=nil;U.Render()
+assert(U.PageContinueAvailable());assert(not key("OnKeyDown","SPACE"));assert(#G.db.evolutions==0)
+local moves=G.db.dungeon.steps;assert(not key("OnKeyDown","SPACE") and G.db.dungeon.steps==moves)
+assert(not key("OnKeyUp","SPACE"))
+G.db.scene={kind="camp",title="Rested",text="Ready to explore."};U.Render();tap("SPACE");assert(not G.db.scene)
+G.db.pets[2]=G.NewPet("murloc",8);G.Active().hp=G.MaxHP(G.Active())
+fixtureBattle("boar",3);G.db.battle.enemy.hp=500;G.db.battle.enemy.maxHP=500;U.page="team";U.Render()
+assert(U.rowHotkeys["2"] and U.rowHotkeys["2"]:IsEnabled());tap("2")
+assert(G.db.active==2 and G.db.battle.turn==1 and U.keyboardFocused,"Number key swaps and spends one turn")
+U.Animate(2);U.page="team";U.Render();tap("0");assert(U.page==nil and G.db.battle.turn==1)
+assert(not U.objective:GetText():find("Next:",1,true),"Battle header must not announce the enemy's next move")
+-- Taxi auto-open with a pending nickname must never steal the chat edit focus.
+U.frame:Hide();G.db.battle=nil;G.db.pendingName="murloc";U.pendingNameSeen=nil;U.page=nil
+edit:SetFocus();U.Open(false);assert(GetCurrentKeyBoardFocus()==edit and not U.nameBox.focused)
+U.frame:Hide();edit:ClearFocus();U.Open(true);assert(U.nameBox.focused)
+U.EndRename(false);U.ReleaseKeyboard(true)
+print("Console controls: Space advances story/evolution/scenes, keyboard swaps, hidden enemy moves and quiet automatic open passed.")
 assert(loadfile("tests/flightbound-social-ui.lua"))(F,G,U,snapshot,json,key,mouseDown)
 if arg[1]=="--animation" then
  G.Init(nil,function(a,b) return b and a or 1 end);G.SetTrainer(G.PlayerTrainer());G.Start("murloc")
@@ -483,4 +506,4 @@ if arg[1]=="--animation" then
   snapshot(string.format("anim-%02d",i));U.Render=render
  end
 end
-print("Flightbound 4.8 UI: social screens, friendly duels, critical feedback, animated battles, nine themes, menus, input guards and lifecycle checks passed.")
+print("Flightbound 4.9 UI: Adventure Console, social screens, friendly duels, critical feedback, animated battles, nine themes, menus, input guards and lifecycle checks passed.")

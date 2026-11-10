@@ -100,11 +100,30 @@ function G.Buy(index)
     local cost=G.Cost(index);d.coins=d.coins-cost;d.upgrades[u.id]=d.upgrades[u.id]+1
     G.Log(u.name.." upgraded! "..u.description);return true
 end
+-- Shop packs fill salves only up to a small carry limit, so banked gold cannot
+-- buy unlimited in-battle healing. Salves found in chests can exceed it, and
+-- existing larger stocks are never reduced.
+F.shopSalveLimit=6
+function G.CanBuySupplies()
+    local d=G.db
+    return not d.battle and d.coins>=20 and (d.salves<F.shopSalveLimit or d.charms<99)
+end
 function G.BuySupplies()
     local d=G.db;if d.battle or d.coins<20 then return false end
-    if d.salves>=99 and d.charms>=99 then return false end
-    d.coins=d.coins-20;d.salves=math.min(99,d.salves+3);d.charms=math.min(99,d.charms+3)
-    G.Log("Travel pack: three extra salves and three charms. Camp still restocks basic supplies for free.");return true
+    local salves=math.max(d.salves,math.min(F.shopSalveLimit,d.salves+3));local charms=math.min(99,d.charms+3)
+    if salves==d.salves and charms==d.charms then G.Log("Your pack is full.");return false end
+    local added,addedCharms=salves-d.salves,charms-d.charms;d.coins=d.coins-20;d.salves=salves;d.charms=charms
+    G.Log("Travel pack: +"..added.." salve"..(added==1 and "" or "s").." and +"..addedCharms.." charms. Shop salves fill your pack to "..F.shopSalveLimit..".");return true
+end
+-- Counts for menu badges: claimable quests (all routes) and achievements.
+function G.PendingRewards()
+    local quests,awards=0,0
+    for zone=1,#F.zones do for i,q in ipairs(F.zones[zone].quests) do
+        if not G.db.routes[zone].claimed[i] and G.QuestProgress(zone,i)>=q.need then quests=quests+1 end
+    end end
+    local stats=G.Stats()
+    for _,a in ipairs(F.achievements) do if not G.db.achievements[a.id] and stats[a.kind]>=a.need then awards=awards+1 end end
+    return quests,awards
 end
 function G.CompleteBattle(b)
     local d=G.db;local gold=b.trivial and 0 or 8+b.enemy.level*2
@@ -135,8 +154,10 @@ end
 function G.NextRunBattle()
     local d=G.db;if not d.run or d.battle then return false end
     if d.run.kind=="finale" then
-        local boss=F.finale[d.run.wave]
-        return G.Encounter(true,{kind="finale",id=boss.id,level=boss.level,title=boss.name})
+        -- The three final guardians rise to meet a stronger team (up to level 30),
+        -- so the finale stays a climax after side content and replays.
+        local boss=F.finale[d.run.wave];local level=math.min(30,math.max(boss.level,G.TeamLevel()-3+d.run.wave))
+        return G.Encounter(true,{kind="finale",id=boss.id,level=level,title=boss.name})
     end
     local wave=d.run.wave
     return G.Encounter(true,{kind="arena",id=F.order[(wave-1)%#F.order+1],level=math.min(30,25+wave),title="Arena Wave "..wave,power=1+math.max(0,wave-4)*.08})

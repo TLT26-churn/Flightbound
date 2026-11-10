@@ -28,7 +28,10 @@ function G.MaxHP(p)
     if p.enemy and p.maxHP then return p.maxHP end
     return 36+p.level*6+G.Spec(p).hp
 end
-function G.NeedXP(p) return 10+p.level*5 end
+-- Later levels need up to 1.8x the 4.8 amount (5% more per level through 16),
+-- so a team that clears every room and quest grows with the dungeons instead of
+-- outpacing them. Existing XP stays valid because the requirement only rises.
+function G.NeedXP(p) return math.floor((10+p.level*5)*(1+math.min(p.level,16)*.05)) end
 -- Names are plain text, bounded in Unicode characters, never WoW markup.
 function G.CleanName(value,maxChars)
     if type(value)~="string" then return nil end
@@ -103,7 +106,7 @@ function G.Init(db,random)
         if not ({wild=true,guardian=true,trainer=true,finale=true,arena=true})[b.kind] then b.kind=b.boss and "guardian" or "wild" end
         b.boss=b.kind~="wild";b.cooldown=number(b.cooldown,0,0,2)
         b.defenseCooldown=number(b.defenseCooldown,0,0,2)
-        b.turn=number(b.turn,0,0,9999);b.intent=b.intent=="special" and "special" or "strike"
+        b.turn=number(b.turn,0,0,9999);b.intent=nil -- Discard legacy announced moves.
         b.focus=b.focus==true;b.burn=number(b.burn,0,0,2);b.weaken=b.weaken==true
         b.charmTries=number(b.charmTries,0,0,99)
         b.rewardLevel=number(b.rewardLevel,pets[d.active].level,1,30)
@@ -179,10 +182,11 @@ function G.Encounter(boss,options)
     enemy.hp=enemy.maxHP
     d.battle={enemy=enemy,zone=d.zone,boss=kind~="wild",kind=kind,title=options.title or (boss and z.title or G.FormName(enemy)),
         rewardLevel=G.Active().level,objective=G.Objective().kind,firstGuardian=kind=="guardian" and not d.badges[d.zone],
-        dungeonKey=options.dungeonKey,rival=options.rival,cooldown=0,defenseCooldown=0,turn=0,intent="strike",charmTries=0,power=options.power or 1}
+        dungeonKey=options.dungeonKey,rival=options.rival,cooldown=0,defenseCooldown=0,turn=0,charmTries=0,power=options.power or 1}
     d.sinceFight=0;d.seen[id]=true
     G.Sound("encounter")
-    G.Log((boss and d.battle.title or "Wild "..G.FormName(enemy)).." appeared! "..(boss and "Watch its next move. Guard against a special." or "Weaken it, then try a Charm."))
+    G.Log(kind=="trainer" and d.battle.title.." challenges you with "..G.FormName(enemy).."! Trainers' companions cannot be tamed."
+        or (boss and d.battle.title or "Wild "..G.FormName(enemy)).." appeared! "..(boss and "Choose your moves carefully. Enemy attacks are unpredictable." or "Weaken it, then try a Charm."))
     return true
 end
 function G.Map() return F.zones[G.db.zone].map end
@@ -273,14 +277,15 @@ function G.Win(caught)
     for _,p in ipairs(d.pets) do if p.hp>0 then p.hp=math.min(G.MaxHP(p),p.hp+math.ceil(G.MaxHP(p)*recovery)) end end
     G.Log(text.." +"..coin.." gold."..(recovery>0 and " Limited HP recovered." or ""))
 end
-function G.PrepareIntent()
-    local b=G.db.battle
-    if not b or b.result then return end
-    b.intent=(b.turn%3==2 and not (b.kind=="wild" and G.db.totalWins<3)) and "special" or "strike"
-end
 function G.EnemyTurn(prefix,guard)
     local d,b=G.db,G.db.battle;if not b or b.result then return end
-    local p=G.Active();b.rewardLevel=math.max(b.rewardLevel or 1,p.level);local special=b.intent=="special"
+    local p=G.Active();b.rewardLevel=math.max(b.rewardLevel or 1,p.level)
+    -- Roll only after a legal player action, never on render/reload or from a
+    -- fixed turn schedule. Defense does not influence the odds. Repeats are
+    -- possible; the opening wild encounters are gentler without being scripted.
+    local chance=(b.zone==1 or b.kind=="wild" and d.totalWins<3) and 20 or 35
+    if b.kind~="wild" and b.zone>1 and b.enemy.hp*2<=G.MaxHP(b.enemy) then chance=50 end
+    local special=G.random(100)<=chance
     local modifier=(guard and .35 or 1)*(b.weaken and .65 or 1)*(b.power or 1);b.weaken=nil
     local damage,_,critical=G.Damage(b.enemy,p,special,modifier)
     if actionVisual then actionVisual.hits[#actionVisual.hits].blocked=guard==true end
@@ -302,7 +307,7 @@ function G.EnemyTurn(prefix,guard)
         if actionVisual then actionVisual.hits[#actionVisual.hits+1]={source="status",target="enemy",amount=damage,beforeHP=before,afterHP=b.enemy.hp} end
         if b.enemy.hp==0 then G.Win(false);return end
     end
-    G.PrepareIntent();G.Log(text)
+    G.Log(text)
 end
 function G.CatchChance()
     local d,b=G.db,G.db.battle;if not b then return 0 end
@@ -350,7 +355,7 @@ local function performAction(action,index)
         if not d.pets[index] or index==d.active or d.pets[index].hp<=0 then return false end
         d.active=index;b.cooldown=0;b.focus=nil;text="Go, "..G.Name(G.Active()).."!"
     elseif action=="flee" then
-        b.result="fled";d.run=nil;G.Log("Safely back on the trail. No gold or progress lost.");return true
+        b.result="fled";d.run=nil;G.Log(b.dungeonKey and "You break away. Continue steps back one tile; the foe stays put." or "Safely back on the trail. No gold or progress lost.");return true
     else return false end
     b.cooldown=math.max(0,b.cooldown-1)
     b.defenseCooldown=math.max(0,(b.defenseCooldown or 0)-1)
@@ -363,7 +368,7 @@ end
 function G.Action(action,index)
     local b=G.db.battle
     if not b or b.result or not G.Active() then return false end
-    local visual={battle=b,action=action,hits={},enemyIntent=b.intent,focused=b.focus,
+    local visual={battle=b,action=action,hits={},focused=b.focus,
         player=visualPet(action=="swap" and G.db.pets[index] or G.Active()),enemy=visualPet(b.enemy)}
     actionVisual=visual
     local ran,ok=pcall(performAction,action,index)
@@ -378,12 +383,21 @@ function G.Select(index)
     if not d.pets[index] or d.pets[index].hp<=0 then return false end
     d.active=index;G.Log(G.Name(G.Active()).." now leads your team.");return true
 end
+-- Result-button wording that matches what Continue will actually do.
+function G.ContinueLabel()
+    local d,b=G.db,G.db.battle;if not b or not b.result then return nil end
+    if b.result=="lost" then return "RETURN TO CAMP" end
+    if d.run and b.result=="win" then return "NEXT BATTLE" end
+    if b.dungeonKey then return b.kind=="guardian" and b.result=="win" and "FINISH DUNGEON" or "BACK TO MAP" end
+    return "CONTINUE"
+end
 function G.Continue()
     local d,b=G.db,G.db.battle
     if not b or not b.result or d.pendingName then return false end
     d.battle=nil
     if b.dungeonKey then
-        if b.result=="lost" or b.result=="fled" then G.RetreatDungeon()
+        if b.result=="fled" then G.FleeDungeon(b)
+        elseif b.result=="lost" then G.RetreatDungeon()
         elseif b.result=="win" or b.result=="caught" then G.FinishDungeonRoom(b) end
         return true
     end

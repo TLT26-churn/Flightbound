@@ -2,7 +2,10 @@ local _, F = ...
 local G,P = F.Game,F.palette
 local U={page=nil,offset=0,starter=1,clock=0,motion={}}
 F.UI=U
-local FONT=F.path.."Art\\Silkscreen.ttf"
+local FONT="Fonts\\FRIZQT__.TTF"
+-- The menu pages share parchment colors; pixel art and battle effects retain
+-- their own palettes. Never restyle global WoW fonts or templates.
+P.dark={.16,.10,.045,1};P.mid={.42,.33,.20,1};P.soft={.67,.55,.34,1};P.light={.87,.79,.60,1}
 local casing={.22,.25,.28,1};local rim={.39,.42,.44,1};local ink={.88,.88,.78,1}
 local function texture(parent,x,y,w,h,color,layer,sublevel)
     local t=parent:CreateTexture(nil,layer or "BACKGROUND",nil,sublevel or 0)
@@ -47,123 +50,17 @@ local function button(parent,x,y,w,h,text,callback,shell)
     b:SetScript("OnLeave",function(self) self.fill:SetColorTexture(unpack(shell and casing or P.light)) end)
     b:SetScript("OnMouseDown",function(self) if self:IsEnabled() then self.label:SetAlpha(.6);self.icon:SetAlpha(.6) end end)
     b:SetScript("OnMouseUp",function(self) self.label:SetAlpha(1);self.icon:SetAlpha(1) end)
-    b.callback=callback;return b
+    b.callback=callback
+    if U.SkinButton then U.SkinButton(b,shell) end
+    return b
 end
 U.Widgets={texture=texture,label=label,button=button}
-function U.Build()
-    if U.frame then return end
-    local w=CreateFrame("Frame","FlightboundFrame",UIParent)
-    U.frame=w;w:SetSize(552,624);w:SetFrameStrata("MEDIUM")
-    w:SetClampedToScreen(true);w:SetMovable(true);w:EnableMouse(true)
-    -- Same-layer texture creation order is not a reliable stacking contract.
-    -- Give the nested casing/bezel rectangles distinct, explicit priorities.
-    texture(w,0,0,552,624,{.08,.10,.11,1},"BACKGROUND",0)
-    texture(w,2,2,548,620,rim,"BACKGROUND",1)
-    texture(w,4,4,544,616,casing,"BACKGROUND",2)
-    texture(w,10,48,532,476,{.10,.13,.14,1},"BACKGROUND",3)
-    texture(w,14,52,524,468,P.dark,"BACKGROUND",4)
-    label(w,19,13,270,19,"FLIGHTBOUND",16,ink)
-    label(w,19,34,265,12,"AZEROTH POCKET ADVENTURE",9,{.62,.67,.65,1})
-    local drag=CreateFrame("Frame",nil,w);drag:SetPoint("TOPLEFT",w,"TOPLEFT",0,0);drag:SetSize(487,48)
-    drag:EnableMouse(true);drag:RegisterForDrag("LeftButton")
-    drag:SetScript("OnDragStart",function() w:StartMoving() end)
-    drag:SetScript("OnDragStop",function()
-        w:StopMovingOrSizing();U.SavePosition()
-    end)
-    w:SetScript("OnHide",function()
-        U.ReleaseKeyboard(true)
-        w:StopMovingOrSizing();U.SavePosition();F.autoOpened=false;U.effect=nil;U.travel=nil
-        if U.nameBox then U.nameBox:ClearFocus() end
-        if U.trainerBox then U.trainerBox:ClearFocus() end
-        if U.particles then for _,t in ipairs(U.particles) do t:Hide() end end
-        U.HideCombatFX();U.ClearDamagePops();U.duelQueue={}
-        if F.Audio then F.Audio.Stop() end
-    end)
-    w:SetScript("OnUpdate",function(_,dt) U.Animate(dt) end)
-    button(w,518,12,22,23,"X",function() w:Hide() end,true)
-    button(w,491,12,22,23,"?",function() U.page="help";U.Render() end,true)
-    U.flight=label(w,461,38,73,10,"ON FOOT",8,{.66,.78,.52,1},"RIGHT")
-    -- An unscaled host keeps screen origins independent of the content scale.
-    U.canvasHost=CreateFrame("Frame",nil,w);U.canvasHost:SetSize(520,464)
-    U.canvasHost:SetPoint("TOPLEFT",w,"TOPLEFT",16,-54)
-    local canvas=CreateFrame("Frame",nil,U.canvasHost);canvas:SetSize(328,272);canvas:SetPoint("TOPLEFT",U.canvasHost,"TOPLEFT",0,0)
-    U.canvas=canvas;U.pools={text={},sprite={},rect={},button={}};U.used={}
-    -- Own the LCD fill on the content frame, below every pooled screen region.
-    -- Its light background is required for all dark text and HP fills to read.
-    U.screenBackground=texture(canvas,0,0,328,272,P.light,"BACKGROUND",-8)
-    U.particles={}
-    for i=1,8 do
-        local t=texture(canvas,0,0,4,4,i%2==0 and P.dark or P.light,"OVERLAY",1)
-        t:Hide();U.particles[i]=t
-    end
-    U.BuildCombatFX()
-    U.actions={}
-    for i=1,4 do
-        U.actions[i]=button(w,16+(i-1)*132,564,124,28,"",nil,true)
-        local b=U.actions[i]
-        b.key=label(b,5,10,14,16,tostring(i),12,ink,"CENTER");b.key:Hide()
-        b.detail=label(b,22,22,98,11,"",8,{.66,.78,.72,1},"CENTER");b.detail:Hide()
-    end
-    U.battleControls=CreateFrame("Frame",nil,w)
-    U.battleControls:SetPoint("TOPLEFT",w,"TOPLEFT",0,-494);U.battleControls:SetSize(552,60)
-    U.battleTip=label(U.battleControls,16,6,520,20,"",9,ink,"CENTER")
-    U.battleExtras={
-        button(U.battleControls,16,34,256,26,"",nil,true),
-        button(U.battleControls,280,34,256,26,"",nil,true),
-    }
-    U.battleControls:Hide()
-    U.navigation=CreateFrame("Frame",nil,w);U.navigation:SetPoint("TOPLEFT",w,"TOPLEFT",0,-526);U.navigation:SetSize(552,30)
-    label(U.navigation,16,8,54,14,"MOVE",10,ink)
-    U.moveButtons={}
-    for i,v in ipairs({{"<",-1,0},{"^",0,-1},{"V",0,1},{">",1,0}}) do
-        local dx,dy=v[2],v[3]
-        U.moveButtons[i]=button(U.navigation,74+(i-1)*50,0,44,28,v[1],function() G.StepDungeon(dx,dy);U.Render() end,true)
-        U.moveButtons[i].moveKey=v[1];U.moveButtons[i].label:SetText("")
-        buttonIcon(U.moveButtons[i],({"left","up","down","right"})[i],true)
-    end
-    label(U.navigation,306,8,54,14,"ZOOM",10,ink)
-    U.zoomOut=button(U.navigation,366,0,30,28,"-",function() U.SetMapZoom(-1) end,true)
-    U.zoomIn=button(U.navigation,402,0,30,28,"+",function() U.SetMapZoom(1) end,true)
-    U.zoomLabel=label(U.navigation,444,8,80,14,"",10,ink,"RIGHT")
-    label(w,18,598,236,10,"/FB  /FLIGHTBOUND  V4.8.2",8,{.61,.67,.64,1})
-    label(w,18,611,236,10,"By Whitebeard Tinkerton - US PVP",7,{.56,.61,.59,1})
-    U.keysToggle=button(w,262,600,116,19,"KEYS: OFF",function()
-        U.SetKeyboard(not G.db.settings.keyboard,true)
-    end,true)
-    buttonIcon(U.keysToggle,"keyboard")
-    U.keysHint=label(w,300,12,181,27,"",10,{.76,.83,.57,1},"RIGHT")
-    U.focusEdges={}
-    for _,v in ipairs({{10,48,532,2},{10,522,532,2},{10,50,2,472},{540,50,2,472}}) do
-        local t=texture(w,v[1],v[2],v[3],v[4],P.light,"BACKGROUND",5)
-        t:Hide();U.focusEdges[#U.focusEdges+1]=t
-    end
-    U.BuildKeyboard()
-    U.auto=button(w,386,600,150,19,"AUTO: ON",function()
-        G.db.settings.auto=not G.db.settings.auto
-        U.UpdateStatus();F.CheckFlight()
-    end,true)
-    tinsert(UISpecialFrames,"FlightboundFrame")
-    w:Hide();U.ApplyPosition()
-end
 function U.MapZoom()
     local size=G.db.settings.mapZoom
     return (size==32 or size==40 or size==48) and size or 40
 end
 function U.SetMapZoom(delta)
     G.db.settings.mapZoom=math.max(32,math.min(48,U.MapZoom()+delta*8));U.Render()
-end
-function U.Layout(wide,exploring)
-    U.wide=wide
-    U.canvasHost:ClearAllPoints()
-    U.canvasHost:SetPoint("TOPLEFT",U.frame,"TOPLEFT",wide and 16 or 30,wide and -54 or -82)
-    U.canvas:SetScale(wide and 1 or 1.5)
-    U.canvas:SetSize(wide and 520 or 328,wide and 464 or 272)
-    U.screenBackground:SetSize(wide and 520 or 328,wide and 464 or 272)
-    if exploring then U.navigation:Show() else U.navigation:Hide() end
-    local zoom=U.MapZoom()
-    U.zoomOut:SetEnabled(zoom>32);U.zoomOut:SetAlpha(zoom>32 and 1 or .4)
-    U.zoomIn:SetEnabled(zoom<48);U.zoomIn:SetAlpha(zoom<48 and 1 or .4)
-    U.zoomLabel:SetText(math.floor(zoom/40*100).."%")
 end
 function U.SavePosition()
     if not G.db or not U.frame then return end
@@ -188,7 +85,7 @@ end
 local function text(x,y,w,h,value,size,align,color)
     local t=pooled("text",function() return label(U.canvas,0,0,1,1,"",12) end)
     t:ClearAllPoints();t:SetPoint("TOPLEFT",U.canvas,"TOPLEFT",x,-y);t:SetSize(w,h)
-    t:SetFont(FONT,size or 11,"");t:SetText(value);t:SetJustifyH(align or "LEFT");t:SetTextColor(unpack(color or P.dark));return t
+    t:SetDrawLayer("OVERLAY",2);t:SetFont(FONT,size or 11,"");t:SetText(value);t:SetJustifyH(align or "LEFT");t:SetTextColor(unpack(color or P.dark));return t
 end
 local function rect(x,y,w,h,color,layer)
     local t=pooled("rect",function() return U.canvas:CreateTexture(nil,"BACKGROUND") end)
@@ -218,7 +115,9 @@ local function smallButton(x,y,w,h,value,fn,enabled)
     -- Room cards customize hover; pooled buttons must restore ordinary behavior.
     b:SetScript("OnEnter",function(self) if self:IsEnabled() then self.fill:SetColorTexture(unpack(P.soft));self.fill:SetAlpha(1) end end)
     b:SetScript("OnLeave",function(self) self.fill:SetColorTexture(unpack(P.light));self.fill:SetAlpha(1) end)
-    b.callback=fn;return b
+    b.callback=fn
+    if U.RefreshButtonSkin then U.RefreshButtonSkin(b) end
+    return b
 end
 local function act(i,name,fn,enabled)
     local b=U.actions[i];b.label:SetText(name);b.label:SetAlpha(1);b:SetEnabled(enabled~=false)
@@ -245,6 +144,11 @@ local function battleExtra(index,key,name,fn,enabled)
     U.battleHotkeys[key]=b
 end
 function U.BattleKey(key)
+    if U.rowHotkeys and next(U.rowHotkeys) then
+        local row=U.rowHotkeys[key]
+        if not U.effect and row and row:IsShown() and row:IsEnabled() and row.callback then row.callback();return true end
+        return false
+    end
     if U.duelView and U.DuelKey then return U.DuelKey(key) end
     local b=U.battleHotkeys and U.battleHotkeys[key]
     if U.effect or not G.db.battle or G.db.battle.result or G.db.pendingName
@@ -261,6 +165,7 @@ function U.Turn(action,index)
     local ok,visual=G.Action(action,index)
     if not ok then return false end
     U.page=nil
+    U.focusNewPet=visual.result=="caught" and U.frame:IsShown()
     U.effect=visual;visual.age=0;visual.phase=0;visual.duration=action=="charm" and 1.05 or .98
     if F.Audio then
         F.Audio.Play(({strike="strike",special="special",charm="charm",salve="heal",guard="guard",focus="guard",swap="encounter",flee="menu"})[action])
@@ -316,7 +221,7 @@ end
 local function page(name) return run(function() U.page=name;U.offset=0 end) end
 local function back() U.page=nil;U.offset=0;U.Render() end
 local function heading(value)
-    text(10,9,U.wide and 500 or 274,17,value,U.wide and 14 or 12);rect(10,28,U.wide and 500 or 308,2,P.dark)
+    text(10,9,U.wide and 500 or 274,17,U.Title(value),U.wide and 14 or 12);rect(10,28,U.wide and 500 or 308,2,P.dark)
 end
 local function dialogue(value)
     value=value or G.db.log
@@ -403,37 +308,17 @@ function U.Battle()
     local d,b=G.db,G.db.battle;local showing=U.CombatPresentation()
     local p,enemy=U.CombatPet("player"),U.CombatPet("enemy")
     local shownResult=not showing and b.result
-    local theme=G.BattleTheme(b)
-    rect(0,0,328,272,theme.panel):SetDrawLayer("BACKGROUND",-7)
-    sprite("Battles\\"..theme.id,0,32,328,164):SetDrawLayer("BACKGROUND",-6)
-    local function panel(x,y,w,h)
-        rect(x,y,w,h,theme.edge,"OVERLAY"):SetDrawLayer("OVERLAY",-4)
-        rect(x+1,y+1,w-2,h-2,theme.panel,"OVERLAY"):SetDrawLayer("OVERLAY",-3)
-    end
-    panel(8,34,198,78);panel(126,118,196,76)
     local result={win="VICTORY!",caught="A NEW FRIEND!",lost="BACK TO CAMP",fled="SAFELY AWAY"}
     local title=shownResult and result[shownResult] or ({guardian="ROUTE GUARDIAN",trainer="TRAINER BATTLE",finale="SKY CITADEL",arena="SKYKEEPER ARENA"})[b.kind] or "WILD ENCOUNTER"
-    text(10,9,308,17,title,12,nil,theme.ink);rect(10,28,308,2,theme.edge,"BORDER")
-    text(12,38,192,27,b.title or F.species[enemy.id].name,11,nil,theme.ink)
-    text(12,66,190,12,"L"..enemy.level.." "..F.species[enemy.id].kind..(not shownResult and " NEXT:"..(showing and showing.enemyIntent or b.intent or "strike") or ""),9,nil,theme.ink)
     local noXP=shownResult and b.trivial or not shownResult and G.XPScale(math.max(b.rewardLevel or 1,p.level),enemy.level)==0
-    hp(12,83,148,enemy,theme);text(12,95,148,13,enemy.hp.."/"..G.MaxHP(enemy).." HP"..(noXP and " NO XP" or ""),8,nil,theme.ink)
-    -- The distant creature stays clear of the player's name panel below it.
-    rect(226,115,76,3,{.04,.04,.05,.45},"BORDER")
-    sprite(G.Art(enemy),218,34,92,92,true,shownResult=="win","enemy")
-    rect(20,191,88,3,{.04,.04,.05,.45},"BORDER")
-    sprite(G.Art(p),16,100,96,96,false,false,"player")
-    text(130,123,188,25,G.Name(p),11,nil,theme.ink)
-    text(130,145,188,13,"L"..p.level.."  "..F.species[p.id].kind,10,nil,theme.ink)
-    hp(130,162,180,p,theme)
-    text(130,175,188,13,"HP "..p.hp.."/"..G.MaxHP(p).."  XP "..p.xp.."/"..G.NeedXP(p),9,nil,theme.ink)
-    panel(8,199,312,65)
-    local log=U.CombatLog()
-    text(16,208,296,52,log,#log>145 and 10 or 11,nil,theme.ink)
+    if not shownResult and b.kind=="trainer" then title="Trainer: "..b.title end
+    local detail=shownResult and "Encounter complete" or "Choose your move"
+    U.BattleScene(p,enemy,title,(F.dungeons[b.zone or d.zone] or F.zones[d.zone]).name.." / "..detail,U.CombatLog(),shownResult=="win",
+        F.species[enemy.id].kind..(noXP and " / NO XP" or ""),F.species[p.id].kind.."  XP "..p.xp.."/"..G.NeedXP(p))
     if shownResult then
-        act(1,d.run and b.result=="win" and "NEXT BATTLE" or b.dungeonKey and (b.kind=="guardian" and "FINISH DUNGEON" or "BACK TO MAP") or "CONTINUE",run(function() U.effect=nil;G.Continue();U.page=nil end))
+        act(1,G.ContinueLabel(),run(function() U.effect=nil;G.Continue();U.page=nil end))
         U.resultAction=U.actions[1].callback
-        act(2,d.run and "LEAVE RUN" or "",d.run and run(function() U.effect=nil;G.LeaveRun();U.page=nil end) or nil,d.run~=nil)
+        act(2,d.run and "LEAVE RUN" or "TEAM / BAG",d.run and run(function() U.effect=nil;G.LeaveRun();U.page=nil end) or page("team"))
         act(3,"",nil,false);act(4,"",nil,false)
     elseif U.page=="bag" then
         battleAct(1,"SALVE ("..d.salves..")","RESTORE 50% HP",function() U.Turn("salve") end,d.salves>0 and p.hp<G.MaxHP(p))
@@ -442,7 +327,6 @@ function U.Battle()
         battleAct(4,"BACK","BATTLE MOVES",page(nil))
     else
         U.battleControls:Show()
-        U.battleTip:SetText("DEFENSE BLOCKS 65% OF ONE HIT; RECOVERS AFTER 2 OTHER TURNS.")
         battleAct(1,"STRIKE","BASIC ATTACK",function() U.Turn("strike") end)
         local mult=G.Multiplier(F.species[p.id].kind,F.species[enemy.id].kind)
         battleAct(2,G.Spec(p).move,b.cooldown>0 and "WAIT "..b.cooldown.." TURN"..(b.cooldown==1 and "" or "S")
@@ -469,7 +353,7 @@ function U.Team()
             local y=36+(row-1)*39;sprite(G.Art(p),10,y,32,32)
             text(48,y+1,186,15,G.Name(p).." L"..p.level,9)
             text(48,y+18,186,12,"HP "..p.hp.."/"..G.MaxHP(p).."  "..F.species[p.id].kind,9)
-            smallButton(241,y,77,17,index==d.active and "LEAD" or "SELECT",run(function()
+            U.rowHotkeys[tostring(row)]=smallButton(241,y,77,17,row.." "..(index==d.active and "LEAD" or "SELECT"),run(function()
                 if d.battle then U.Turn("swap",index) else G.Select(index) end
             end),p.hp>0 and index~=d.active)
             smallButton(241,y+19,77,17,"NAME",function() U.Rename(index) end)
@@ -479,6 +363,7 @@ function U.Team()
     act(1,"< PREV",run(function() U.offset=math.max(0,U.offset-4) end),U.offset>0)
     act(2,"NEXT >",run(function() U.offset=U.offset+4 end),U.offset+4<#d.pets)
     act(3,"BACK",back);act(4,"EVOLUTIONS",page("evolutions"))
+    U.rowHotkeys["5"]=U.actions[1];U.rowHotkeys["6"]=U.actions[2];U.rowHotkeys["0"]=U.actions[3]
 end
 function U.Journal()
     heading("FIELD GUIDE  "..#G.db.pets.."/12")
@@ -499,10 +384,10 @@ end
 function U.Help()
     heading("A POCKET ADVENTURE")
     text(12,40,304,38,"Walk the dungeon. Explore side rooms, find keys and open the boss door. Companions evolve at levels 6 and 14.",10)
-    text(12,88,304,14,"SPECIAL ATTACK ADVANTAGES",10)
-    text(12,111,304,18,"EMBER > GROVE > TIDE > EMBER",10)
-    text(12,133,304,18,"BEAST > ARCANE > SHADOW > BEAST",10)
-    text(12,162,304,30,"Watch NEXT. Defense blocks 65% of one hit, then needs two other turns to recover.",10)
+    text(12,88,304,14,"Special attack advantages",10)
+    text(12,111,304,18,"Ember > Grove > Tide > Ember",10)
+    text(12,133,304,18,"Beast > Arcane > Shadow > Beast",10)
+    text(12,162,304,30,"Enemy moves are hidden. Defense blocks 65% of one hit, then needs two other turns to recover.",10)
     dialogue("KEYS: arrows move, Space interacts; battle numbers match buttons. Click inside to focus. Escape or click outside releases. Drag the top to move; close to pause.")
     act(1,"BACK",back);act(2,"SETTINGS",page("settings"))
     act(3,"SMALLER",run(function() U.Scale(G.db.settings.scale-.1) end),G.db.settings.scale>.71)
@@ -513,15 +398,15 @@ function U.Scale(value)
 end
 function U.UpdateStatus()
     if not U.frame then return end
-    U.flight:SetText(F.onTaxi and "IN FLIGHT" or "ON FOOT")
-    U.auto.label:SetText("AUTO: "..(G.db.settings.auto and "ON" or "OFF"))
+    U.flight:SetText(F.onTaxi and "In flight" or "On foot")
+    U.auto.label:SetText("Auto: "..(G.db.settings.auto and "On" or "Off"))
 end
 function U.Render()
     if not U.frame then return end
     U.duelView=U.GetDuelView and U.GetDuelView() or nil
     if U.duelView and U.page~="duelswap" and U.page~="dueloptions" and U.page~="help" then U.page="duel" end
     if not U.duelView and (U.page=="duel" or U.page=="duelswap" or U.page=="dueloptions") then U.page="social" end
-    U.battleVisible=false;U.resultAction=nil;U.HideCombatFX()
+    U.battleVisible=false;U.resultAction=nil;U.advanceAction=nil;U.rowHotkeys={};U.HideCombatFX()
     U.motion={}
     U.battleHotkeys={};U.battleControls:Hide()
     for i,b in ipairs(U.actions) do
@@ -557,6 +442,7 @@ function U.Render()
     elseif G.db.battle then U.Battle()
     else U.pages.story() end
     U.UpdateStatus()
+    if U.FinishConsole then U.FinishConsole() end
     U.CheckKeyboardFocus()
     U.DrawCombatFX()
     if U.UpdateDuelInvite then U.UpdateDuelInvite() end
@@ -565,7 +451,7 @@ U.Paint={text=text,rect=rect,sprite=sprite,button=smallButton,act=act,run=run,pa
 function U.Open(manual)
     U.Build();if manual then F.autoOpened=false end
     U.Render();U.frame:Show()
-    if G.PendingPet() and U.nameBox then U.nameBox:SetFocus() end
+    if manual and G.PendingPet() and U.nameBox then U.nameBox:SetFocus() end
     U.CheckKeyboardFocus()
     if F.Audio then F.Audio.Play("open") end
 end

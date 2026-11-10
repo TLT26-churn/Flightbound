@@ -7,7 +7,7 @@ local function reset(id,level)
  G.Active().level=level or 8;G.Active().hp=G.MaxHP(G.Active())
  G.db.totalWins=10;G.db.scene=nil;G.db.evolutions={};G.db.showChapter=false
  assert(G.Encounter(false,{id="boar",level=20,kind="wild"}))
- G.db.battle.enemy.hp=500;G.db.battle.enemy.maxHP=500;G.db.battle.intent="special"
+ G.db.battle.enemy.hp=500;G.db.battle.enemy.maxHP=500 -- low RNG rolls choose a special.
  U.Open(true)
 end
 local function hidden()
@@ -18,6 +18,7 @@ local function capture(name)
  local render=U.Render;U.Render=function() end;snapshot(name);U.Render=render
 end
 local function shownText(value)
+ if U.zone:IsShown() and U.zoneTitle:GetText()==U.Title(value) then return true end
  for _,t in ipairs(U.pools.text) do if t.shown and t.text==value then return true end end
  return false
 end
@@ -26,7 +27,7 @@ for _,id in ipairs(F.order) do for tier,level in ipairs({3,8,16}) do
  assert(U.Turn("special"));local e=U.effect
  assert(e.player.id==id and e.player.hp==before and e.enemy.hp==foe)
  assert(e.hits[1].source=="player" and e.hits[1].special and e.hits[1].tier==tier)
- assert(e.hits[2].source=="enemy" and e.hits[2].special,"Enemy must use its original intent")
+ assert(e.hits[2].source=="enemy" and e.hits[2].special,"Enemy's resolved random move must animate correctly")
  assert(not U.actions[1]:IsEnabled() and not U.Turn("strike"),"A second input must not spend another turn")
  assert(U.CombatPet("enemy").hp==foe and U.CombatPet("player").hp==before)
  local committed=json(G.db)

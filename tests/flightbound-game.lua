@@ -4,7 +4,7 @@ local G=F.Game
 local function low(a,b) return b and a or 1 end
 local function eq(a,b) assert(a==b,tostring(a).." ~= "..tostring(b)) end
 local function fresh(id,difficulty,rng)
- G.Init(nil,rng or low);assert(G.SetTrainer({name="Aster Ashborne",race="human",class="WARRIOR",gender=2}));assert(G.Start(id or "wolf"))
+ G.Init(nil,rng or low);assert(G.SetTrainer({name="Valette Ashborne",race="human",class="WARRIOR",gender=2}));assert(G.Start(id or "wolf"))
  if difficulty then assert(G.SetDifficulty(difficulty)) end
 end
 local function ack() G.db.scene=nil;G.db.evolutions={} end
@@ -16,8 +16,8 @@ local function fight(smart)
   if smart then
    if p.hp<G.MaxHP(p)*.40 and G.db.salves>0 then action="salve"
    elseif recruit and #G.db.pets<4 and not b.boss and not G.Owns(b.enemy.id) and b.enemy.hp/G.MaxHP(b.enemy)<=.5 and G.db.charms>0 then action="charm"
-   elseif b.intent=="special" and p.hp<G.MaxHP(p)*.65 and (b.defenseCooldown or 0)==0 then action="guard"
-   elseif b.cooldown==0 and G.Multiplier(F.species[p.id].kind,F.species[b.enemy.id].kind)>=1 then action="special" end
+   elseif b.cooldown>0 and p.hp<G.MaxHP(p)*.65 and (b.defenseCooldown or 0)==0 then action="guard"
+   elseif b.cooldown==0 then action="special" end -- Even resisted specials can heal/protect after evolution.
   end
   assert(G.Action(action));turns=turns+1
  end
@@ -67,7 +67,7 @@ assert(not G.SanitizeTrainer({race="skyborne_alliance",class="SHAMAN",gender=2,n
 assert(not G.SanitizeTrainer({race="skyborne_horde",class="MAGE",gender=1,name="No"}))
 assert(not G.SanitizeTrainer({race="human",class="WARRIOR",gender=3,name="No"}))
 UnitRace=function() return "Undead","Scourge" end;UnitClass=function() return "Paladin","PALADIN" end
-UnitSex=function() return 3 end;UnitName=function() return "Aster Ashborne" end
+UnitSex=function() return 3 end;UnitName=function() return "Valette Ashborne" end
 local hero=G.PlayerTrainer();eq(hero.race,"undead");eq(hero.class,"PALADIN");eq(hero.gender,2)
 UnitRace=nil;UnitClass=nil;UnitSex=nil;UnitName=nil
 G.Init(nil);assert(not G.Start("wolf"));fresh();eq(G.db.version,5);eq(G.db.settings.difficulty,"adventure")
@@ -130,8 +130,8 @@ G.db.battle=nil;G.db.wins[1]=100;assert(G.ClaimQuest(1,1));assert(not G.ClaimQue
 fresh("murloc");G.db.totalWins=10;G.db.pets={G.NewPet("murloc",20),G.NewPet("wolf",20)}
 assert(G.Encounter(false,{id="boar",level=10}))
 local b=G.db.battle;local p=G.Active();local before=p.hp
-local fullDamage=G.Damage(b.enemy,p,false,1);p.hp=before
-local expected=G.Damage(b.enemy,p,false,.35);p.hp=before
+local fullDamage=G.Damage(b.enemy,p,true,1);p.hp=before
+local expected=G.Damage(b.enemy,p,true,.35);p.hp=before -- low RNG picks a special.
 assert(G.Action("guard"));eq(before-p.hp,expected);assert(expected<fullDamage)
 eq(b.defenseCooldown,2);eq(b.turn,1);assert(G.db.log:find("Bubble Guard",1,true))
 local hp=p.hp;local log=G.db.log

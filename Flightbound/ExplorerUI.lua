@@ -26,13 +26,13 @@ function U.pages.trainer()
   p.class=list[(index-1+delta)%#list+1]
  end
  button(113,110,24,24,"<",run(function() classStep(-1) end));button(294,110,24,24,">",run(function() classStep(1) end))
- text(140,116,150,16,p.class,11,"CENTER")
- text(12,154,304,12,"TRAINER NAME",10)
+ text(140,116,150,16,U.Title(p.class),11,"CENTER")
+ text(12,154,304,12,"Trainer name",10)
  rect(12,170,304,27,P.dark);rect(14,172,300,23,P.soft,"BORDER")
  if not U.trainerBox then
   local box=CreateFrame("EditBox",nil,U.canvas);U.trainerBox=box
   box:SetPoint("TOPLEFT",U.canvas,"TOPLEFT",20,-176);box:SetSize(288,18)
-  box:SetFont(F.path.."Art\\Silkscreen.ttf",11,"");box:SetTextColor(unpack(P.dark));box:SetAutoFocus(false);box:SetMaxLetters(24);box:SetTextInsets(0,0,0,0)
+  box:SetFont("Fonts\\FRIZQT__.TTF",11,"");box:SetTextColor(unpack(P.dark));box:SetAutoFocus(false);box:SetMaxLetters(24);box:SetTextInsets(0,0,0,0)
   box:SetScript("OnEnterPressed",function(self) self:ClearFocus() end)
   box:SetScript("OnEscapePressed",function(self) self:ClearFocus() end)
   box:SetText(p.name)
@@ -51,12 +51,13 @@ function U.pages.story()
  text(12,38,200,15,"DUNGEON "..d.zone.." / 8",11);button(228,35,88,23,"SELECT",page("dungeons"))
  sprite(G.TrainerArt(),14,62,92,92,false,false,"trainer")
  text(119,70,196,28,d.trainer.name,12);text(119,102,196,27,G.TrainerRace(d.trainer.race).name,10)
- text(119,136,196,16,d.trainer.class.." / "..G.Difficulty().name,9)
- text(12,167,304,17,"EXPLORE / FIND KEY / FACE BOSS",10)
+ text(119,136,196,16,U.Title(d.trainer.class).." / "..U.Title(G.Difficulty().name),9)
+ text(12,167,304,17,"Explore / Find the key / Face the boss",10)
  text(12,186,304,12,"SALVES "..d.salves.."   CHARMS "..d.charms.."   "..d.coins.." GOLD",9)
  dialogue(d.badges[d.zone] and z.ending or z.intro)
  act(1,goal.action,run(U.FollowStory),G.Active()~=nil);act(2,"TEAM / NAMES",page("team"),G.Active()~=nil)
  act(3,"CAMP SHOP",page("shop"));act(4,"MENU",page("menu"))
+ U.advanceAction=U.actions[1]
 end
 local tileArt={T="Symbols\\chest",K="Symbols\\key",C="Symbols\\camp",["?"]="Symbols\\crack"}
 local function drawTile(x,y,px,py,size,interactive)
@@ -84,15 +85,11 @@ local function drawTile(x,y,px,py,size,interactive)
 end
 function U.pages.dungeon()
  local d=G.db;local r=d.dungeon;if not r then U.pages.story();return end
- heading(F.dungeons[r.zone].name)
- local p=G.Active();text(10,32,500,12,"HP "..p.hp.."/"..G.MaxHP(p).."  SALVES "..d.salves.."  KEY "..r.keys.."  /  "..d.trainer.class,10)
- local size=U.MapZoom();local columns,rows=math.floor(520/size),math.floor(360/size)
+ local size=U.MapZoom();local columns,rows=math.floor(552/size),math.floor(340/size)
  local left=G.Clamp(r.x-math.ceil(columns/2),0,21-columns);local top=G.Clamp(r.y-math.ceil(rows/2),0,17-rows)
- local ox,oy=math.floor((520-columns*size)/2),44+math.floor((360-rows*size)/2)
- -- Explicit priority keeps this mat beneath floors, including reused textures.
- rect(0,44,520,360,G.MapTheme().fog):SetDrawLayer("BACKGROUND",-1)
+ local ox,oy=math.floor((552-columns*size)/2),math.floor((340-rows*size)/2)
+ rect(0,0,552,340,G.MapTheme().fog):SetDrawLayer("BACKGROUND",-1)
  for row=1,rows do for col=1,columns do drawTile(left+col,top+row,ox+(col-1)*size,oy+(row-1)*size,size,true) end end
- dialogue()
  act(1,"INTERACT",run(G.InteractDungeon));act(2,"DUNGEON MAP",page("chart"))
  act(3,"TEAM / BAG",page("team"));act(4,"MENU",page("menu"))
 end
@@ -100,13 +97,15 @@ function U.pages.chart()
  if not G.db.dungeon then back();return end
  heading("DISCOVERED DUNGEON MAP")
  for y=1,17 do for x=1,21 do drawTile(x,y,8+(x-1)*24,36+(y-1)*24,24,false) end end
- text(10,450,500,14,"EXPLORE TO REVEAL ROOMS AND PASSAGES.",10,"CENTER")
+ local p=G.DungeonProgress()
+ text(10,450,500,14,"Cargo "..p.cargo.."/"..p.cargoTotal.." / Caches "..p.caches.."/"..p.cacheTotal.." / Secrets "..p.secrets.."/"..p.secretTotal.." / Foes "..p.foes.."/"..p.foeTotal,10,"CENTER")
  act(1,"BACK TO EXPLORING",back);act(2,"",nil,false);act(3,"",nil,false);act(4,"",nil,false)
 end
 function U.pages.menu()
  heading("EXPLORER'S JOURNAL")
- local items={{"DUNGEONS","dungeons"},{"TRAINER","trainer"},{"CAMP SHOP","shop"},{"EVOLUTIONS","evolutions"},{"FIELD GUIDE","journal"},{"ACHIEVEMENTS","awards"},{"DUNGEON MAP","chart"},{"SETTINGS","settings"},{"FRIENDS / GUILD","social"},{"LEADERBOARD","leaderboard"}}
- for i,v in ipairs(items) do button(10+((i-1)%2)*157,36+math.floor((i-1)/2)*31,151,25,v[1],function()
+ local quests,awards=G.PendingRewards()
+ local items={{"DUNGEONS","dungeons"},{"TRAINER","trainer"},{"CAMP SHOP","shop"},{"EVOLUTIONS","evolutions"},{"FIELD GUIDE","journal"},{"QUESTS"..(quests>0 and " ("..quests..")" or ""),"quests"},{"ACHIEVEMENTS"..(awards>0 and " ("..awards..")" or ""),"awards"},{"DUNGEON MAP","chart"},{"SETTINGS","settings"},{"FRIENDS / GUILD","social"},{"LEADERBOARD","leaderboard"}}
+ for i,v in ipairs(items) do button(10+((i-1)%2)*157,36+math.floor((i-1)/2)*27,151,24,v[1],function()
   if v[2]=="trainer" then U.trainerDraft=nil;if U.trainerBox then U.trainerBox:SetText(G.db.trainer.name) end end
   U.page=v[2];U.offset=0;U.Render()
  end,v[2]~="chart" and (v[2]~="shop" or not G.db.dungeon) or v[2]=="chart" and G.db.dungeon~=nil) end

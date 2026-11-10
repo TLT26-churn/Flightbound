@@ -20,9 +20,9 @@ function U.pages.story()
     local boss={id=F.zones[d.zone].boss,level=F.zones[d.zone].level+2}
     sprite(G.Art(boss),16,65,94,94,false,false,"keeper")
     text(126,72,184,22,z.rooms.." ROOMS",13)
-    text(126,100,184,51,"CREATURES, TREASURE, REST AND A FINAL BOSS.",10)
+    text(126,100,184,51,"Creatures, treasure, rest and a final boss.",10)
     local p=G.Active()
-    text(12,170,304,17,d.badges[d.zone] and "WINDSTONE RESTORED" or "YOUR NEXT EXPEDITION",11)
+    text(12,170,304,17,d.badges[d.zone] and "Windstone restored" or "Your next expedition",11)
     text(12,187,304,11,(p and G.Name(p).." L"..p.level.." / " or "")..d.coins.." GOLD",9)
     dialogue(d.badges[d.zone] and z.ending or z.intro)
     act(1,goal.action,run(U.FollowStory),p~=nil)
@@ -70,7 +70,7 @@ function U.pages.scene()
     heading(s.title)
     local p=G.Active()
     sprite(s.kind=="clear" and G.Art(p) or art[s.kind] or "camp",112,45,104,104,false,false,"scene")
-    text(12,157,304,16,s.kind=="clear" and "WINDSTONES "..G.Badges().." / 8" or "ROOM COMPLETE",12,"CENTER")
+    text(12,157,304,16,s.kind=="clear" and "WINDSTONES "..G.Badges().." / 8" or "Room complete",12,"CENTER")
     text(12,180,304,13,"TEAM "..#d.pets.." / 12   GOLD "..d.coins,10,"CENTER")
     dialogue(s.text)
     act(1,s.kind=="clear" and G.Objective().action or "BACK TO MAP",run(function()
@@ -79,6 +79,7 @@ function U.pages.scene()
         U.page=U.page=="scene" and nil or U.page
     end))
     act(2,"TEAM / NAMES",page("team"));act(3,"",nil,false);act(4,"MENU",page("menu"))
+    U.advanceAction=U.actions[1]
 end
 function U.pages.menu()
     heading("EXPEDITION JOURNAL")
@@ -103,7 +104,7 @@ function U.pages.dungeons()
         if z then
             local y=37+(row-1)*39
             text(12,y,213,17,index..". "..z.name,10)
-            text(12,y+18,213,12,d.badges[index] and "CLEARED / REPLAY AVAILABLE" or index>G.Badges()+1 and "LOCKED" or "NEXT WINDSTONE",9)
+            text(12,y+18,213,12,d.badges[index] and "Cleared / Replay available" or index>G.Badges()+1 and "LOCKED" or "Next windstone",9)
             button(235,y+3,80,25,"GO",run(function()
                 G.ChangeZone(index-d.zone);d.scene=nil;U.page=nil;d.showChapter=true
             end),not d.dungeon and index<=G.Badges()+1)
@@ -124,7 +125,7 @@ function U.pages.evolutions()
         local x=10+(tier-1)*106
         sprite(G.Art(p,tier),x+9,65,84,84,false,not owned or G.Tier(p)<tier,"form"..tier)
         text(x,151,102,29,G.FormName(p,tier),9,"CENTER")
-        text(x,181,102,12,tier==1 and "BASE FORM" or "LEVEL "..F.evolutionLevels[tier-1],10,"CENTER")
+        text(x,181,102,12,tier==1 and "Base form" or "LEVEL "..F.evolutionLevels[tier-1],10,"CENTER")
     end
     dialogue("All 12 lineages evolve at levels 6 and 14. Evolutions change their appearance, improve HP, attack and defense, and strengthen their special. Nicknames stay.")
     act(1,"< PREV",run(function() U.evoIndex=math.max(1,U.evoIndex-1) end),U.evoIndex>1)
@@ -144,5 +145,6 @@ function U.pages.evolution()
     local old,new=G.Spec(p,e.tier-1),G.Spec(p,e.tier)
     dialogue("HP +"..(new.hp-old.hp)..", attack +"..(new.attack-old.attack)..", defense +"..(new.defense-old.defense)..". Special upgraded: "..new.move..". Your nickname and collection stay with this companion.")
     act(1,"CONTINUE",run(function() table.remove(G.db.evolutions,1);U.evolving=nil;U.page=nil end))
+    U.advanceAction=U.actions[1]
     act(2,"",nil,false);act(3,"",nil,false);act(4,"",nil,false)
 end

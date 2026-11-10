@@ -50,7 +50,8 @@ function U.pages.shop()
         button(234,y+7,82,25,maxed and "MAX" or G.Cost(i).."G",run(function() G.Buy(i) end),not maxed and d.coins>=G.Cost(i))
     end
     dialogue(d.log)
-    act(1,"SUPPLIES 20G",run(G.BuySupplies),d.coins>=20)
+    text(12,188,304,16,"Packs fill salves to 6; found supplies can exceed 6.",9)
+    act(1,"SUPPLIES 20G",run(G.BuySupplies),G.CanBuySupplies())
     act(2,"FREE REST",run(G.Camp),G.Active()~=nil)
     act(3,"BACK",page("menu"));act(4,"QUEST BOOK",page("quests"))
 end
@@ -121,20 +122,24 @@ function U.pages.rename()
     sprite(G.Art(p),14,38,72,72,false,false,"naming")
     text(98,48,218,30,G.FormName(p),12)
     text(98,84,218,18,"LEVEL "..p.level.." / "..F.species[p.id].kind,10)
-    text(14,111,302,14,"NICKNAME (UP TO 16 CHARACTERS)",10)
+    text(14,111,302,14,"Nickname (up to 16 characters)",10)
     rect(12,132,304,32,P.dark)
     rect(14,134,300,28,P.soft,"BORDER")
     if not U.nameBox then
         local box=CreateFrame("EditBox",nil,U.canvas);U.nameBox=box
         box:SetPoint("TOPLEFT",U.canvas,"TOPLEFT",22,-138);box:SetSize(284,22)
-        box:SetFont(F.path.."Art\\Silkscreen.ttf",12,"");box:SetTextColor(unpack(P.dark))
+        box:SetFont("Fonts\\FRIZQT__.TTF",12,"");box:SetTextColor(unpack(P.dark))
         box:SetAutoFocus(false);box:SetMaxLetters(16);box:SetTextInsets(0,0,0,0)
         box:SetScript("OnEnterPressed",function() U.EndRename(true) end)
         box:SetScript("OnEscapePressed",function() U.EndRename(false) end)
     end
     U.nameBox:Show()
-    if U.prepareNameField then U.nameBox:SetText("");U.nameBox:SetFocus();U.nameBox:HighlightText();U.prepareNameField=nil end
-    text(14,176,302,14,U.renameNew and "ENTER: SAVE    ESC: SKIP" or "ENTER: SAVE    ESC: CANCEL",9)
+    if U.prepareNameField then
+        U.nameBox:SetText("")
+        if U.focusNewPet then U.nameBox:SetFocus();U.nameBox:HighlightText() end
+        U.prepareNameField=nil;U.focusNewPet=nil
+    end
+    text(14,176,302,14,U.renameNew and "Enter: save    Esc: skip" or "Enter: save    Esc: cancel",9)
     dialogue(U.renameNew and "Your new companion has joined the team! Choose a nickname, or SKIP to keep their normal species name. You can rename them later in TEAM / BAG."
         or "Give this companion a name of its own. Names appear in the team, battles and travel view. A blank name restores the species name.")
     act(1,"SAVE NAME",function() U.EndRename(true) end)
@@ -182,6 +187,7 @@ function U.pages.ending()
     text(12,149,304,43,"THE SKYWAYS ARE RESTORED!\n8 WINDSTONES / 3 FINAL GUARDIANS",11,"CENTER")
     dialogue(F.story.ending)
     act(1,"KEEP EXPLORING",run(function() G.db.showEnding=false;U.page=nil end))
+    U.advanceAction=U.actions[1]
     act(2,"ENDLESS ARENA",run(function() G.db.showEnding=false;U.page="arena" end))
     act(3,"ACHIEVEMENTS",run(function() G.db.showEnding=false;U.offset=0;U.page="awards" end))
     act(4,"FIELD GUIDE",run(function() G.db.showEnding=false;U.offset=0;U.page="journal" end))

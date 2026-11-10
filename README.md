@@ -14,14 +14,16 @@ while you travel. Open it anytime with `/fb`, or let it open automatically on fl
 | --- | --- |
 | ![Dungeon exploration](docs/dungeon.png) | ![Animated creature battle](docs/battle.png) |
 
-Screenshots are rendered from the addon's actual UI and bundled assets using an isolated demo save.
+Screenshots are rendered from the addon's actual Lua UI and bundled assets using an isolated demo save. Headless previews use a substitute serif font; WoW uses its native font.
 
 ## Play
 
 - Eight themed dungeons with fog of war, keys, chests, secret passages and guardians, followed by the Sky Citadel finale.
 - Twelve creature lineages, with evolutions at levels 6 and 14, custom names, colored sprites, animated specials and chiptune sound.
 - A customizable trainer, Story/Adventure/Veteran difficulty, quests, upgrades and persistent exploration.
-- Optional keyboard controls: arrows move, Space interacts, and number keys select battle moves. Escape releases keyboard focus.
+- A classic WoW console with an attached map, companion bar and controls, consistent capitalization and dungeon-themed battles.
+- Hidden randomized enemy moves: guarding is a gamble, with no fixed third-attack special.
+- Optional keyboard controls: arrows move, Space interacts, number keys select battle moves and teammates, and Space continues story/evolution screens. Escape releases keyboard focus.
 - Friendly duels using teams of 1–3 owned species, normalized to level 14. Duels preserve campaign health, items and progress.
 - Campaign leaderboards restricted to current friends and/or guildmates, with online sync and cached offline scores.
 
@@ -30,14 +32,14 @@ Screenshots are rendered from the addon's actual UI and bundled assets using an 
 Works with **WoW Forever (interface 16001)** on **Windows** and **Linux through Wine/Proton**.
 The same ZIP works on both; no external runtime or addon dependency is required.
 
-1. Download `Flightbound-4.8.2.zip` from [Releases](https://github.com/TLT26-churn/Flightbound/releases).
+1. Download `Flightbound-<version>.zip` from [Releases](https://github.com/TLT26-churn/Flightbound/releases).
 2. Extract its `Flightbound` folder into your WoW installation's `_forever_/Interface/AddOns/` directory.
 3. Check that `Interface/AddOns/Flightbound/Flightbound.toc` exists, without an extra nested folder.
 4. For a first install, restart WoW and enable Flightbound in the AddOns list. For an update, replace the addon folder and `/reload`.
 5. Type `/fb`.
 
 Use the release ZIP for installation. GitHub's automatic **Source code** download contains the development repository and extra folders.
-Updating 4.8.x preserves your campaign. WoW saves progress during `/reload` or clean logout.
+Updating to 4.9 preserves your campaign. WoW saves progress during `/reload` or clean logout.
 
 ## Friends, guildmates and duels
 
@@ -70,11 +72,13 @@ have passed simulated two-client tests; a live two-player session remains to be 
 Runtime code and assets are in `Flightbound/`; the game rules and peer protocol are testable without WoW.
 The headless tests use synthetic saves and simulated APIs, never the installed game's files.
 
-On Linux, install LuaJIT, Python 3 and Pillow, then run from the repository root:
+On Linux, install LuaJIT, Python 3, Pillow and DejaVu fonts, then run from the repository root:
 
 ```sh
 luajit tests/flightbound-game.lua
 luajit tests/flightbound-critical.lua
+luajit tests/flightbound-enemy-ai.lua
+luajit tests/flightbound-gameplay-review.lua
 luajit tests/flightbound-social.lua
 luajit tests/flightbound-social-client.lua
 luajit tests/flightbound-ui.lua --animation

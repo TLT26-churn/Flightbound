@@ -1,4 +1,4 @@
-# Flightbound 4.8.2 — Friendly duels and campaign leaderboards
+# Flightbound 4.9.0 — Adventure Console
 
 A small, movable Game Boy-style creature RPG inside WoW Forever. The trainer
 now walks an actual dungeon map. The room-card selection flow is replaced by
@@ -11,11 +11,16 @@ The result must contain `Interface/AddOns/Flightbound/Flightbound.toc`, without
 an extra nested folder. For a first install, restart WoW and enable Flightbound
 in the character screen's AddOns list. To update, replace the existing addon
 folder, then use `/reload` when convenient. Open with `/fb`.
-The footer should read **V4.8.2**. Compatible with WoW Forever (interface 16001),
+The footer should read **v4.9.0**. Compatible with WoW Forever (interface 16001),
 Windows and Linux through Wine/Proton. No external program is needed.
 `/flightbound` and `/fbound` still work; `/fb` also accepts their subcommands.
 
-**4.8.0 preserves your current campaign save.** It adds optional friendly duels
+**4.9.0 preserves your current campaign save.** It adds the Adventure Console,
+hidden randomized enemy attacks, optional rooms and caches, steadier progression,
+keyboard swapping and Space continuation through story/evolution screens. Shop
+packs fill salves to six; fleeing steps back inside the dungeon without healing.
+
+**4.8.0 introduced friendly links.** It adds optional friendly duels
 and a campaign leaderboard shared only with your friends and guildmates.
 
 **4.8.1 compatibility fix:** Forever's first name and surname are now joined
@@ -36,7 +41,7 @@ Decline and a countdown. One alert respects the Sound setting. No save reset.
 
 ## Friendly duels
 
-Both players need **Flightbound 4.8.2**, must be online in WoW Forever,
+Both players need **Flightbound 4.9.0**, must be online in WoW Forever,
 and must appear in each other's friends list or share a guild. Battle.net
 friends count when their Forever character is available; previously
 seen characters remain recognizable while that Battle.net friendship exists.
@@ -49,10 +54,10 @@ seen characters remain recognizable while that Battle.net friendship exists.
 3. Select **Duel** beside a ready contact. Your friend clicks **Accept Duel**
    in the invitation popup. **Choose Team** opens the team picker if needed;
    save a matching team size, then accept. `/fb friends` also has Accept Duel.
-   Invitations expire after a minute. Both players must update to 4.8.2.
+   Invitations expire after a minute. Both players must update to 4.9.0.
 4. Take alternating turns using Strike, named Special, Defense, Swap and Focus.
    With keys enabled: **1** Strike, **2** Special, **3** Defense, **4** Swap,
-   **5** Duel Menu, **6** Focus. Choose a replacement companion with the mouse.
+   **5** Duel Menu, **6** Focus. Choose a replacement companion with the mouse or **1–3**; **0** goes back.
    Press **Space** after the result to return to the club.
 
 Duels use separate, temporary teams: they never consume campaign HP, items,
@@ -123,23 +128,28 @@ Dungeon backdrops, colored creatures, numbered moves, cooldowns, immediate
 naming and keyboard controls remain. A small footer credits the game:
 **By Whitebeard Tinkerton - US PVP**.
 
-The **KEYS: OFF / ON** button enables optional keyboard controls. Its preference
+The **Keys: Off / On** button enables optional keyboard controls. Its preference
 is saved, while focus starts released after closing or reloading the window.
 After a battle, press **Space** to activate **Back to Map**, **Continue**,
 **Finish Dungeon** or **Next Battle**. The focused window shows the current
-Space action in its header. A fresh press is required; a held key cannot skip
-the result or immediately interact with the map. Escape releases keyboard focus.
+Space action in its footer. A fresh press is required; a held key cannot skip
+the result or immediately interact with the map. Space also continues story,
+evolution, dungeon-clear and ending screens. Escape releases keyboard focus.
 The addon and its bundled TGA textures work with WoW Forever on Windows and
 Linux (Wine/Proton); no external runtime is required.
 
-The window is 552×624 UI units, with
-a full-width 520×360 exploration viewport. The default 40-unit tiles are 2.5×
-larger than before; the map has 6.25× the display area. Movement and zoom
-controls sit below the map, and the message panel takes less of the playfield.
-Zoom **− / +** switches between 80%, 100% and 120% (32/40/48-unit tiles), saved
-with your preferences. The map follows your trainer at every zoom. The full
-dungeon chart uses 24-unit tiles; battles, menus and trainer creation display
-at 1.5× their previous size. Window position, scale and progress carry over.
+The Adventure Console uses a 588×650 movable window with classic WoW framing,
+red primary actions, quiet secondary controls, parchment headings and portrait
+health bars. The 552×340 map is joined directly to the companion strip and
+movement/action dock. Numbered battle actions form two rows: combat moves above,
+items/swap, taming and Focus below. Headings and actions use title case;
+explanations use sentence case. HP and XP remain abbreviated.
+
+The title-bar journal opens the menu from any screen. **Dungeon Map** contains
+zoom **− / +** controls (80%, 100%, 120%, saved with preferences), while the
+chart always shows discovered tiles at 24 units. Menus use a large parchment
+panel, and battle art follows the current dungeon. Your position, scale,
+keyboard preference and campaign progress carry over.
 
 Version 4.0 included the user's requested one-time fresh start. It applies on
 the next addon load, backs up the prior in-memory game in `FlightboundBackupDB`,
@@ -155,7 +165,7 @@ The class selector only offers combinations available to the selected race.
 **Use My WoW Hero** reads your current character's name, race, class and gender
 through normal WoW APIs and fills the form. You can then customize it. No live
 WoW character data is modified. Your trainer uses a matching pixel avatar for
-race and gender; class is shown in the profile and exploration HUD. This is a
+race and gender; class is shown in the trainer profile. This is a
 pixel interpretation, not a copy of the live character's face or equipment.
 
 The creation table follows [Blizzard's Forever character guide](https://news.blizzard.com/en-us/article/24304075/create-the-hero-you-want-to-be-in-world-of-warcraft-forever),
@@ -202,22 +212,23 @@ map layout, discoveries or object interaction rules.
 
 ### Arrow keys and focus
 
-- Click **KEYS: OFF** to turn it on, or click anywhere inside the window when
-  ready. The bright border confirms focus. Moving the pointer away, clicking
+- Click **Keys: Off** to turn it on, or click anywhere inside the window when
+  ready. A gold line above the footer confirms focus. Moving the pointer away, clicking
   bottom buttons and navigating through menus or battles all retain it.
 - Tap **Up / Down / Left / Right** to move one tile. These arrow presses are
   consumed by Flightbound instead of triggering WoW character movement.
-- Tap **Space** to interact. **SPACE: INTERACT** is shown in the header when
+- Tap **Space** to interact. **Space: interact** is shown in the footer when
   dungeon controls are active. Holding a captured key does not repeat its action.
 - In battle, **1** = Strike, **2** = the creature's special, **3** = its defensive
   move, **4** = Bag / Team, **5** = Tame, and **6** = Focus. Top-row and numpad
   digits work. In the bag, numbers match its visible buttons: **1** Salve,
-  **2** Swap Pet, **3** Flee, **4** Back. Select the pet to swap with the mouse.
+  **2** Swap Pet, **3** Flee, **4** Back. In Team, **1–4** select a visible
+  companion, **5/6** change pages, and **0** goes back. Swapping still uses a turn.
   Disabled moves and inputs during an attack animation do not spend turns.
   All digits are captured while focused, including unused ones, so they cannot
   trigger WoW action buttons. Other keys keep their usual behavior.
 - On a battle result, **Space** activates the main continuation button (including
-  **Back to Map**); the header names the action. Arrows and Space remain captured
+  **Back to Map**); the footer names the action. Arrows and Space remain captured
   on menus and during battle, without operating the dungeon or triggering WoW
   movement/jumping. After returning to the map, release Space before interacting.
 - **Escape**, clicking outside, or closing the window releases focus. Already
@@ -228,7 +239,7 @@ map layout, discoveries or object interaction rules.
   APIs are called during combat.
 - If an arrow, Space or digit is already held before focusing, release it and
   click again; the addon does not take over a press that started in WoW.
-- Click **KEYS: ON** to disable the feature, or use `/fb keys on|off`.
+- Click **Keys: On** to disable the feature, or use `/fb keys on|off`.
   The slash command changes the preference; click the window to take focus.
 
 This uses an ordinary keyboard-enabled addon frame, with selective event
@@ -242,7 +253,8 @@ Explore the corridors and rooms to find:
 - **Creatures and champions:** stepping onto them starts combat. Cleared
   encounters stay cleared, including after a reload or trip back to camp.
 - **Chests:** stand on or next to one and press **Interact** for gold, a charm
-  and a salve. Each chest is usable once per expedition.
+  and a salve. Each chest is usable once per expedition. New side rooms contain
+  supply caches; these do not add to cargo quests or leaderboard chest counts.
 - **A key:** pick it up with **Interact**, then find the sealed door.
 - **The sealed door:** face it and press **Interact** to consume the key and
   open the passage. The door stays open.
@@ -258,9 +270,13 @@ those discoveries intact. At camp the team heals and basic supplies refill to
 at least six charms and two salves. Closing the game simply pauses at your
 current tile. Reloading restores that exact position and unfinished battle.
 
+Each dungeon now has an additional secret and an open detour, with different
+foe, trap, cache and camp placements. Original paths and coordinates stay valid
+for existing saves. The map footer shows cargo, cache, secret and foe progress.
+
 The boss's windstone opens the next dungeon. There is no required wild-win
 counter, room-choice screen or automatic route. Earlier dungeons can be replayed
-after completion. Eight windstones lead to the three-battle Sky Citadel finale;
+after completion, directly from their story page. Eight windstones lead to the three-battle Sky Citadel finale;
 finishing it unlocks the ending and endless arena.
 
 ## A more demanding game
@@ -269,8 +285,21 @@ finishing it unlocks the ending and endless arena.
 only 4% party recovery after victory. Story remains a gentler option; Veteran
 raises attack/HP further and has no normal victory healing. Only the very first
 wild encounter receives reduced opening damage; bosses do not inherit that
-protection. Enemy levels progress from 2 in the first dungeon to 23 in the last,
-with bosses two levels above their area's creatures. The finale is level 26–28.
+protection. Dungeon foes rise toward your strongest companion within a cap of
+three levels above their authored level (one on Story). From dungeon two,
+guardian HP and damage gain 20% on Adventure or 25% on Veteran. Finale foes
+scale with your team up to level 30. Later levels need more XP, up to 1.8× the
+old requirement; existing levels and earned XP are retained.
+
+Enemies choose attacks randomly after you commit your action, without a visible
+next-move cue or fixed third-attack pattern. Specials can repeat. The first
+dungeon is gentler; later trainers and bosses become more likely to use a
+special below half HP. Guarding does not change their attack odds.
+
+Fleeing steps back to a safe tile and leaves the foe in place. It keeps your
+map and supplies, and gives no free heal. Shop packs fill salves only up to six;
+found salves and existing larger stocks are kept. The journal now exposes
+Quests and marks claimable quest/achievement rewards.
 
 Level-ups restore the gained maximum HP plus 10%, rather than fully healing.
 The defensive move blocks 65% of the next hit but gives no free healing. It
@@ -288,8 +317,9 @@ on evolution, use type advantages, and have two intervening turns of cooldown.
 Their second button line shows readiness, remaining turns and type advantage.
 Defensive names match each lineage (Bubble Guard, Barkskin, Bone Armor, etc.);
 all share the same blocking strength. A blue pulse and sound mark their use.
-Watch the enemy's **NEXT** move: defense can soften specials, and Focus spends
-a turn to strengthen your next special by 65%. Swapping takes a turn. Weaken wild
+Enemy moves are hidden and chosen randomly after you commit your action. Defense
+can soften specials, but its timing is a gamble. Focus spends a turn to strengthen
+your next special by 65%. Swapping takes a turn. Weaken wild
 creatures and use Charm to recruit them; your first catch is guaranteed below
 half HP. All companions share earned XP, with 65% for benched creatures.
 Trivial enemies still stop awarding XP and ordinary battle gold. The level cap
@@ -339,11 +369,11 @@ does not repeat capture rewards or discard the battle result.
 Drag the title bar to move. `/fb scale 85` changes size, `/fb position` restores
 its default location, `/fb sound on|off` controls chiptune effects, and
 `/fb auto on|off` controls flight opening. `/fb difficulty story|adventure|veteran`
-works outside combat. Optional arrow capture uses the **KEYS** toggle; WoW's
+works outside combat. Optional arrow capture uses the **Keys** toggle; WoW's
 keybindings remain unchanged.
 Sound uses WoW's Effects/SFX volume. A manually opened window stays open after
 landing; an automatically opened one closes on landing. Hiding stops sounds
-and animations. The window is 552×624 UI units; the existing scale setting
+and animations. The window is 588×650 UI units; the existing scale setting
 changes the whole window independently of the exploration zoom buttons.
 
 Progress is account-wide in `FlightboundDB`; WoW writes it on clean logout or
@@ -356,7 +386,8 @@ all eight maps, reachable keys, doors blocking the boss, fog, one-tile movement,
 secret passages, loot/camp idempotency, saved map state, evolution and naming.
 Combat tests compare tactical and Strike-only play. Twenty-four tactical
 campaigns traverse the real corridors and complete the finale. One hundred eighty UI
-layouts render with the actual font and assets, no text overflow, and stable
+layouts render from actual Lua draw calls and assets, with a substitute serif
+font in headless previews (the client uses its native WoW font), and stable
 texture order. The 4.1 UI checks also cover zoom persistence, viewport edges,
 tile click areas and transitions between the map and enlarged battle/menu
 screens. The 4.2 checks simulate captured and propagated key events, all four
@@ -392,7 +423,13 @@ cooldowns, localized error filtering with manual-whisper errors preserved,
 confirmed-addon filtering and closed-window invitation handling. Popup checks
 cover sound/mute, team selection, duplicate acceptance, busy/cancelled/expired
 invites and keyboard-focus preservation.
-The complete campaign still clears in 24/24 tactical simulation runs.
+The 4.9 checks additionally cover 1,600 attack/guard probability cases, 900 seeded
+enemy responses, save compatibility of added side rooms, capped scaling, cache
+accounting, fleeing, supplies, keyboard swaps and automatic-open focus. The
+direct-route campaign and finale clear in 24/24 tactical simulation runs.
+The first-dungeon solo test clears 48–60 of 60 runs per starter; recruiting a
+companion and exploring side rooms give more options. No test policy sees the
+enemy's next move.
 These checks do not replace live-client testing.
 
 The bundled creature, evolution, trainer, terrain, symbol, battle-background

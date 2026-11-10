@@ -12,11 +12,13 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Install test tools
-        run: sudo apt-get update && sudo apt-get install -y luajit python3-pil
+        run: sudo apt-get update && sudo apt-get install -y luajit python3-pil fonts-dejavu-core
       - name: Game and messaging checks
         run: |
           luajit tests/flightbound-game.lua
           luajit tests/flightbound-critical.lua
+          luajit tests/flightbound-enemy-ai.lua
+          luajit tests/flightbound-gameplay-review.lua
           luajit tests/flightbound-social.lua
           luajit tests/flightbound-social-client.lua
       - name: UI and layer checks

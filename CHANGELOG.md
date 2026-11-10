@@ -1,5 +1,17 @@
 # Release notes
 
+## 4.9.0
+
+- Replace the detached controls with the Adventure Console: classic WoW framing, parchment headings, an attached companion bar, two rows of battle actions, and consistent title/sentence case.
+- Hide enemy intent and choose attacks randomly after the player's action. Specials can open or repeat; the third attack is no longer scripted. Guard still blocks 65% and does not affect enemy attack odds.
+- Add a secret and an open detour to each dungeon, with caches, encounters, traps and some extra camps. Keep every existing tile and saved position valid. Cache rewards do not inflate cargo leaderboards.
+- Slow later leveling, cap enemy scaling around the strongest companion, strengthen later guardians and scale the finale. Keep the opening dungeon gentler and preserve existing levels/XP.
+- Flee one safe tile back without healing; retain the expedition. Shop packs fill salves to six, preserving larger existing stocks and found salves.
+- Add keyboard team selection, Space continuation through story/evolution/clear screens, accurate result labels, visible quest rewards and map progress. Automatic flight opening no longer focuses a pending nickname field.
+- Preserve saves and quiet friend/guild messaging. Both duel players need the same addon version. One portable ZIP supports Windows and Linux (Wine/Proton).
+
+Validated headlessly: 263 rendered screens with no text overflow or layer-order dependence; hidden-AI probability and timing checks; all three difficulties simulated; campaign/save, controls, critical-hit and two-client social regressions. Live-client verification of this UI remains outstanding.
+
 ## 4.8.2
 
 - Stop blindly whispering every guild roster member; use a hidden guild-channel hello for discovery. Scores and duels stay private.
