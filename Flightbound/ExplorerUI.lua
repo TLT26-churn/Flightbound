@@ -85,10 +85,11 @@ local function drawTile(x,y,px,py,size,interactive)
 end
 function U.pages.dungeon()
  local d=G.db;local r=d.dungeon;if not r then U.pages.story();return end
- local size=U.MapZoom();local columns,rows=math.floor(552/size),math.floor(340/size)
+ local width,height=U.mapWidth,U.mapHeight
+ local size=U.MapZoom();local columns,rows=math.floor(width/size),math.floor(height/size)
  local left=G.Clamp(r.x-math.ceil(columns/2),0,21-columns);local top=G.Clamp(r.y-math.ceil(rows/2),0,17-rows)
- local ox,oy=math.floor((552-columns*size)/2),math.floor((340-rows*size)/2)
- rect(0,0,552,340,G.MapTheme().fog):SetDrawLayer("BACKGROUND",-1)
+ local ox,oy=math.floor((width-columns*size)/2),math.floor((height-rows*size)/2)
+ rect(0,0,width,height,G.MapTheme().fog):SetDrawLayer("BACKGROUND",-1)
  for row=1,rows do for col=1,columns do drawTile(left+col,top+row,ox+(col-1)*size,oy+(row-1)*size,size,true) end end
  act(1,"INTERACT",run(G.InteractDungeon));act(2,"DUNGEON MAP",page("chart"))
  act(3,"TEAM / BAG",page("team"));act(4,"MENU",page("menu"))

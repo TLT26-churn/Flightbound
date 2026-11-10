@@ -7,6 +7,8 @@ local tex,label,button=W.texture,W.label,W.button
 local gold,ink,dim={1,.82,0,1},{.94,.90,.80,1},{.69,.65,.56,1}
 local dark,edge,navy={.075,.065,.05,1},{.42,.35,.23,1},{.035,.04,.10,1}
 local path=F.path.."Art\\Console\\"
+-- The exploration scene and its message strip occupy separate, adjacent areas.
+U.mapWidth,U.mapHeight=552,296
 local abbreviations={hp="HP",xp="XP",pvp="PvP",us="US",wow="WoW"}
 function U.Title(value)
  value=value or "" -- Empty WoW FontStrings can return nil from GetText().
@@ -133,11 +135,11 @@ function U.Build()
  tex(U.companion,65,31,475,15,{.02,.02,.02,1},"BORDER",-1)
  U.petHP=tex(U.companion,66,32,473,13,{.12,.65,.10,1},"BORDER",0)
  U.petHPText=label(U.companion,65,31,475,16,"",12,{1,1,1,1},"CENTER")
- U.mapLog=CreateFrame("Frame",nil,U.canvas);at(U.mapLog,U.canvas,8,294,536,40)
+ U.mapLog=CreateFrame("Frame",nil,w);at(U.mapLog,w,18,104+U.mapHeight,552,44)
  U.mapLog:EnableMouse(true)
- tex(U.mapLog,0,0,536,40,{.6,.6,.65,1},"BACKGROUND",-2)
- tex(U.mapLog,1,1,534,38,navy,"BACKGROUND",-1)
- U.mapLogText=label(U.mapLog,9,6,518,30,"",12,ink)
+ tex(U.mapLog,0,0,552,44,{.6,.6,.65,1},"BACKGROUND",-2)
+ tex(U.mapLog,1,1,550,42,navy,"BACKGROUND",-1)
+ U.mapLogText=label(U.mapLog,12,7,528,30,"",12,ink)
  U.dock=CreateFrame("Frame",nil,w);at(U.dock,w,18,498,552,108);panel(U.dock,0,0,552,108)
  U.actions={}
  for i=1,4 do
@@ -183,7 +185,7 @@ function U.Layout(wide,exploring)
  U.screenBackground:SetColorTexture(unpack(P.light))
  if exploring then
   U.zone:Show();U.companion:Show();U.mapLog:Show();U.navigation:Show()
-  at(U.canvasHost,U.frame,18,104,552,340);U.canvas:SetSize(552,340);U.screenBackground:SetSize(552,340)
+  at(U.canvasHost,U.frame,18,104,U.mapWidth,U.mapHeight);U.canvas:SetSize(U.mapWidth,U.mapHeight);U.screenBackground:SetSize(U.mapWidth,U.mapHeight)
  end
  local zoom=U.MapZoom();U.zoomOut:SetEnabled(zoom>32);U.zoomIn:SetEnabled(zoom<48);U.zoomLabel:SetText(math.floor(zoom/40*100).."%")
  -- Zoom is available on the full-map page; no floating controls over terrain.

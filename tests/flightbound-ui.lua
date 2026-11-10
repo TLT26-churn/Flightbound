@@ -126,6 +126,9 @@ U.trainerBox:SetText("Valette Ashborne");click(U.actions[1]);assert(G.db.trainer
 click(U.actions[1]);assert(#G.db.pets==1);click(U.actions[1]);assert(G.db.dungeon)
 assert(U.wide and U.canvas.scale==1 and U.navigation.shown)
 assert(U.MapZoom()==40)
+assert(U.mapLog:GetParent()==U.frame,"Exploration text must live outside the terrain canvas")
+assert(-U.mapLog.anchor[5]==-U.canvasHost.anchor[5]+U.canvas.height,"Message strip starts below the full map viewport")
+assert(-U.companion.anchor[5]==-U.mapLog.anchor[5]+U.mapLog.height,"Companion strip follows the message without overlap")
 local savedRun=G.db.dungeon
 click(U.actions[2]);assert(U.page=="chart")
 click(U.zoomIn);assert(U.MapZoom()==48 and not U.zoomIn:IsEnabled())

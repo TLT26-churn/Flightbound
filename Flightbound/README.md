@@ -1,4 +1,4 @@
-# Flightbound 4.9.1 — Adventure Console
+# Flightbound 4.9.2 — Adventure Console
 
 A small, movable Game Boy-style creature RPG inside WoW Forever. The trainer
 now walks an actual dungeon map. The room-card selection flow is replaced by
@@ -11,9 +11,12 @@ The result must contain `Interface/AddOns/Flightbound/Flightbound.toc`, without
 an extra nested folder. For a first install, restart WoW and enable Flightbound
 in the character screen's AddOns list. To update, replace the existing addon
 folder, then use `/reload` when convenient. Open with `/fb`.
-The footer should read **v4.9.1**. Compatible with WoW Forever (interface 16001),
+The footer should read **v4.9.2**. Compatible with WoW Forever (interface 16001),
 Windows and Linux through Wine/Proton. No external program is needed.
 `/flightbound` and `/fbound` still work; `/fb` also accepts their subcommands.
+
+**4.9.2 map layout:** moves exploration messages into their own strip below the
+map. They no longer cover terrain or the bottom row of tiles.
 
 **4.9.1 startup fix:** handles blank icon and button labels returning nil from
 WoW, which could stop `/fb` and `/flightbound` from opening the console. No
@@ -45,7 +48,7 @@ Decline and a countdown. One alert respects the Sound setting. No save reset.
 
 ## Friendly duels
 
-Both players need **Flightbound 4.9.1**, must be online in WoW Forever,
+Both players need **Flightbound 4.9.2**, must be online in WoW Forever,
 and must appear in each other's friends list or share a guild. Battle.net
 friends count when their Forever character is available; previously
 seen characters remain recognizable while that Battle.net friendship exists.
@@ -58,7 +61,7 @@ seen characters remain recognizable while that Battle.net friendship exists.
 3. Select **Duel** beside a ready contact. Your friend clicks **Accept Duel**
    in the invitation popup. **Choose Team** opens the team picker if needed;
    save a matching team size, then accept. `/fb friends` also has Accept Duel.
-   Invitations expire after a minute. Both players must update to 4.9.1.
+   Invitations expire after a minute. Both players must update to 4.9.2.
 4. Take alternating turns using Strike, named Special, Defense, Swap and Focus.
    With keys enabled: **1** Strike, **2** Special, **3** Defense, **4** Swap,
    **5** Duel Menu, **6** Focus. Choose a replacement companion with the mouse or **1–3**; **0** goes back.
@@ -144,8 +147,9 @@ Linux (Wine/Proton); no external runtime is required.
 
 The Adventure Console uses a 588×650 movable window with classic WoW framing,
 red primary actions, quiet secondary controls, parchment headings and portrait
-health bars. The 552×340 map is joined directly to the companion strip and
-movement/action dock. Numbered battle actions form two rows: combat moves above,
+health bars. The map has its own 552×296 viewport with a separate 44-unit message strip
+below it, followed by the companion strip and movement/action dock. Camera
+bounds keep every displayed tile clear of the message at all zoom levels. Numbered battle actions form two rows: combat moves above,
 items/swap, taming and Focus below. Headings and actions use title case;
 explanations use sentence case. HP and XP remain abbreviated.
 

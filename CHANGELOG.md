@@ -1,5 +1,11 @@
 # Release notes
 
+## 4.9.2
+
+- Move exploration messages into a separate strip below the map, above the companion bar. Keep the compact window size.
+- Fit the map camera to its own viewport so bottom-row tiles stay fully visible at every zoom.
+- Includes the 4.9.1 window-opening fix. No save or gameplay changes.
+
 ## 4.9.1
 
 - Fix a window-opening error from blank icon/button labels returning nil from WoW FontString:GetText. Both `/fb` and `/flightbound` can build the console again.

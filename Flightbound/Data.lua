@@ -1,5 +1,5 @@
 local _, F = ...
-F.version = "4.9.1"
+F.version = "4.9.2"
 F.path = "Interface\\AddOns\\Flightbound\\"
 -- Original little sprites and a self-contained game. No live-unit data is used.
 F.species = {
