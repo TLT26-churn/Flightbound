@@ -1,95 +1,77 @@
 # Flightbound
 
-A small, movable, Game Boy-style creature RPG inside **World of Warcraft: Forever**.
-Explore hand-built dungeons, tame a team, and battle through an Azeroth-themed campaign
-while you travel. Open it anytime with `/fb`, or let it open automatically on flight paths.
+An animated **WoW Forever idle clicker** for flight paths and short breaks.
+Click creatures, collect gold, recruit a party and restore Azeroth's skyways.
+Open it with **`/fb`**. Sound is on by default.
 
-**By Whitebeard Tinkerton - US PVP**
+**Whitebeard Tinkerton - US PVP**
 
 [Download the latest release](https://github.com/TLT26-churn/Flightbound/releases/latest)
- · [Full game guide](Flightbound/README.md)
- · [Release notes](CHANGELOG.md)
+ · [Game guide](Flightbound/README.md)
+ · [Research and design](docs/redesign/research.md)
 
-| Explore | Battle |
-| --- | --- |
-| ![Dungeon exploration](docs/dungeon.png) | ![Animated creature battle](docs/battle.png) |
+![Flightbound in motion](docs/gameplay.gif)
 
-Screenshots are rendered from the addon's actual Lua UI and bundled assets using an isolated demo save. Headless previews use a substitute serif font; WoW uses its native font.
+The preview is rendered from actual addon Lua draw calls and original assets with
+a synthetic save. The GIF has no audio; the addon plays attack, loot and upgrade
+sounds using WoW's Master sound channel.
 
-## Play
+## A clearer game
 
-- Eight themed dungeons with fog of war, keys, chests, secret passages and guardians, followed by the Sky Citadel finale.
-- Twelve creature lineages, with evolutions at levels 6 and 14, custom names, colored sprites, animated specials and chiptune sound.
-- A customizable trainer, Story/Adventure/Veteran difficulty, quests, upgrades and persistent exploration.
-- A classic WoW console with an attached map, companion bar and controls, consistent capitalization and dungeon-themed battles.
-- Hidden randomized enemy moves: guarding is a gamble, with no fixed third-attack special.
-- Optional keyboard controls: arrows move, Space interacts, number keys select battle moves and teammates, and Space continues story/evolution screens. Escape releases keyboard focus.
-- Friendly duels using teams of 1–3 owned species, normalized to level 14. Duels preserve campaign health, items and progress.
-- Campaign leaderboards restricted to current friends and/or guildmates, with online sync and cached offline scores.
+The adventure screen shows one objective, a large clickable creature, Power Strike
+and two useful upgrade choices. Companions, World and Relics open separate screens
+with a Back button. There is no resource-assignment dashboard to learn first.
+
+- Animated creature breathing, companion lunges and projectiles, four-frame impact
+  effects, enemy recoil, floating damage, defeat fades and gold flying to the counter.
+- Six companion roles, three active slots, and visible evolutions at levels 10/25.
+- Nine regions with bosses that use armor, wards, regeneration, elemental
+  resistance, frost or swarms. Crew choices and active skills counter them.
+- Twenty-seven regional contracts. Elite trials ask for different plans: a required
+  companion, a lone ally, no manual attacks, or no Power Strike.
+- Four play styles and six collectible relics with limited equipment slots.
+- Crew progress while hidden or offline, up to eight hours per absence. Boss
+  attempts pause while away or in management screens; offline credit never clears
+  a new boss for you.
+
+A guardian and one regional contract open each next skyway. The final Sky Citadel
+requires 18 contracts. After the story, the journal still tracks unfinished
+contracts, elite trials, relics and companion forms. This is a finite game, with
+no forced prestige reset or infinite arena ladder.
 
 ## Install
 
-Works with **WoW Forever (interface 16001)** on **Windows** and **Linux through Wine/Proton**.
-The same ZIP works on both; no external runtime or addon dependency is required.
+**WoW Forever interface 16001**, on **Windows** or **Linux through Wine/Proton**.
+One portable ZIP works on both; no external runtime is required inside WoW.
 
-1. Download `Flightbound-<version>.zip` from [Releases](https://github.com/TLT26-churn/Flightbound/releases).
-2. Extract its `Flightbound` folder into your WoW installation's `_forever_/Interface/AddOns/` directory.
-3. Check that `Interface/AddOns/Flightbound/Flightbound.toc` exists, without an extra nested folder.
-4. For a first install, restart WoW and enable Flightbound in the AddOns list. For an update, replace the addon folder and `/reload`.
-5. Type `/fb`.
+1. Download `Flightbound-5.0.0.zip` from Releases.
+2. Extract its single `Flightbound` folder into `_forever_/Interface/AddOns/`.
+3. Remove a previously installed `FlightboundCamp` prototype folder to avoid loading
+   both games. Keep its SavedVariables if you want to preserve that experiment.
+4. Restart WoW to discover the addon folder, enable Flightbound, and type `/fb`.
 
-Use the release ZIP for installation. GitHub's automatic **Source code** download contains the development repository and extra folders.
-Updating to 4.9 preserves your campaign. WoW saves progress during `/reload` or clean logout.
+Version 5 starts a new idle adventure. It does not import the old RPG campaign or
+the camp prototype. The old RPG SavedVariables remain declared and untouched;
+new progress uses `FlightboundIdleDB`, with a separate backup variable. WoW writes
+progress on clean logout/reload. No character movement, combat, spell, targeting,
+flight-control or chat automation is performed.
 
-## Friends, guildmates and duels
-
-Both players need the same addon version and must be friends with each other or share a guild.
-Open `/fb friends`, choose teams of the same size, then invite. Only online contacts detected
-running Flightbound appear. The recipient gets an **Accept Duel / Choose Team / Decline** popup,
-even with the game window closed; it never takes keyboard focus. Finish any active campaign
-battle before starting. Battle.net friends count when their Forever character is known.
-
-`/fb leaderboard` opens the campaign board. It ranks completion and campaign milestones, with
-separate difficulty boards. Records are self-reported, intended for friendly comparison. There
-is no public/global leaderboard or relay of strangers' records. `/fb sync off` pauses sharing.
-
-**4.8.2 fixes discovery chat spam:** guild discovery uses a hidden guild-channel hello instead
-of scanning the roster with whispers. Unreachable friends pause for five minutes; errors from
-recent Flightbound background sends are filtered while ordinary whisper errors stay visible.
-Invites now have an obvious popup, countdown and optional sound. Both players should update.
-
-**4.8.1 fixes Forever compatibility:** it uses first name + surname, does not mistake a surname
-for a realm, and no longer treats Forever's outgoing-chat flag as a blanket addon-whisper block.
-Actual chat lockdown and send failures are still respected.
-
-If linking is unavailable, `/fb linkstatus` shows the setup/send status. `/fb linktest` sends
-one addon whisper to your own character and reports whether it returns. It does not message contacts.
-Self-whisper delivery has been verified live on US PvP. Friend-to-friend duels and synchronization
-have passed simulated two-client tests; a live two-player session remains to be verified.
-
-## Develop and test
-
-Runtime code and assets are in `Flightbound/`; the game rules and peer protocol are testable without WoW.
-The headless tests use synthetic saves and simulated APIs, never the installed game's files.
-
-On Linux, install LuaJIT, Python 3, Pillow and DejaVu fonts, then run from the repository root:
+## Development
 
 ```sh
-luajit tests/flightbound-game.lua
-luajit tests/flightbound-critical.lua
-luajit tests/flightbound-enemy-ai.lua
-luajit tests/flightbound-gameplay-review.lua
-luajit tests/flightbound-social.lua
-luajit tests/flightbound-social-client.lua
-luajit tests/flightbound-ui.lua --animation
-python3 tests/render_flightbound.py --check-layer-order --animation
+luajit tests/idle-game.lua
+luajit tests/idle-simulate.lua
+luajit tests/idle-ui.lua
+python3 tests/render_idle.py
 python3 tools/package.py
 ```
 
-The renderer checks 263 screens for text overflow and drawing order. Other checks cover campaign
-completion, combat rules, keyboard focus, friend/guild admission, lost and duplicated packets,
-reload recovery, long turn histories and campaign isolation. These tests complement live-client testing.
-The packaging command creates `dist/Flightbound-<version>.zip` containing only the portable addon folder.
+Tests run on synthetic saves and a strict WoW UI stand-in. They cover fresh starts,
+save isolation, live rules, offline batching, boss counterplay, all elite trials,
+controls, sound/mute, real animation movement and bounded UI allocation. Rendering
+checks frame bounds and text layout. Simulation policies include active, saturated
+clicking and crew-led play. These are headless checks, not a claim of live client
+playtesting or independent testing on both operating systems.
 
-The bundled Silkscreen font includes its [SIL Open Font License](Flightbound/Art/Silkscreen-OFL.txt).
-Artwork is generated pixel art; previews use the bundled assets. This is an unofficial fan addon.
+Artwork and sounds are reused from Flightbound's original generated assets.
+Unofficial fan addon, not affiliated with Blizzard Entertainment.

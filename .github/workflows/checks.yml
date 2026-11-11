@@ -10,20 +10,16 @@ jobs:
   headless:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Install test tools
         run: sudo apt-get update && sudo apt-get install -y luajit python3-pil fonts-dejavu-core
-      - name: Game and messaging checks
+      - name: Rules and progression
         run: |
-          luajit tests/flightbound-game.lua
-          luajit tests/flightbound-critical.lua
-          luajit tests/flightbound-enemy-ai.lua
-          luajit tests/flightbound-gameplay-review.lua
-          luajit tests/flightbound-social.lua
-          luajit tests/flightbound-social-client.lua
-      - name: UI and layer checks
+          luajit tests/idle-game.lua
+          luajit tests/idle-simulate.lua
+      - name: UI, animation and sound calls
         run: |
-          luajit tests/flightbound-ui.lua --animation
-          python3 tests/render_flightbound.py --check-layer-order --animation
-      - name: Validate installable ZIP
+          luajit tests/idle-ui.lua
+          python3 tests/render_idle.py
+      - name: Portable ZIP
         run: python3 tools/package.py

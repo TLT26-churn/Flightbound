@@ -1,3 +1,14 @@
+# 5.0.0 — Animated idle adventure
+
+- Replaced the RPG/camp prototype with a click-creature, collect-gold, recruit-companions loop.
+- Added visible automatic attacks, projectiles, impact frames, recoil, damage numbers, defeat fades and gold collection animation.
+- Enabled sound by default, added a clear mute control and bounded overlapping voices.
+- Simplified the main view; Companions, World and Relics now open separate management screens.
+- Added six crew roles, three active slots, two visual evolutions, four play styles and six equipable relics.
+- Added nine boss mechanics/regions and 27 contracts, including distinct crew trials; the final skyway requires 18 contracts.
+- Added capped idle/offline earnings, a clear next objective and a one-time fresh idle save with prior progress preserved.
+- Removed old campaign, dungeon movement, arena, PvP and social-sync modules from the installed addon.
+
 # Release notes
 
 ## 4.9.2

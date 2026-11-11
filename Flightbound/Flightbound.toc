@@ -1,29 +1,13 @@
 ## Interface: 16001
 ## Title: Flightbound
-## Notes: A pocket-sized Azeroth creature adventure for your flight paths.
+## Notes: An animated Azeroth idle clicker. Click creatures, recruit companions, restore the skyways. /fb
 ## Author: Whitebeard Tinkerton - US PVP
-## Version: 4.9.2
-## SavedVariables: FlightboundDB, FlightboundBackupDB, FlightboundSocialDB
+## Version: 5.0.0
+## SavedVariables: FlightboundIdleDB, FlightboundIdleBackupDB, FlightboundDB, FlightboundBackupDB, FlightboundSocialDB
 ## DefaultState: enabled
 
 Data.lua
-Game.lua
-Adventure.lua
-Campaign.lua
-Trainer.lua
-DungeonMap.lua
-Duel.lua
-Social.lua
-MapArt.lua
-Audio.lua
-UI.lua
-Console.lua
-CombatFX.lua
-AdventureUI.lua
-DungeonUI.lua
-ExplorerUI.lua
-Keyboard.lua
-SocialClient.lua
-SocialUI.lua
-InviteUI.lua
-Flightbound.lua
+IdleGame.lua
+IdleAudio.lua
+IdleUI.lua
+IdleMain.lua
